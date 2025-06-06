@@ -8,20 +8,22 @@ import Image from 'next/image';
 interface AppIconProps {
   app: AppDefinition;
   onClick: (appId: AppId) => void;
-  onLongPress?: (appId: AppId) => void;
+  onLongPress?: (appId: AppId, event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => void;
 }
 
 export function AppIcon({ app, onClick, onLongPress }: AppIconProps) {
   const IconComponent = app.icon;
   const longPressTimeout = useRef<NodeJS.Timeout | null>(null);
   const isLongPressed = useRef(false);
+  const pressEventRef = useRef<React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement> | null>(null);
 
-  const handlePressStart = () => {
+  const handlePressStart = (event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
     isLongPressed.current = false;
+    pressEventRef.current = event; // Store the event
     if (onLongPress) {
       longPressTimeout.current = setTimeout(() => {
-        if (onLongPress) { // Check again in case component unmounted or onLongPress changed
-             onLongPress(app.id);
+        if (onLongPress && pressEventRef.current) { 
+             onLongPress(app.id, pressEventRef.current);
         }
         isLongPressed.current = true;
       }, 500); 
@@ -36,6 +38,7 @@ export function AppIcon({ app, onClick, onLongPress }: AppIconProps) {
     if (!isLongPressed.current) {
       onClick(app.id); 
     }
+    pressEventRef.current = null; // Clear the stored event
   };
 
   const handleMouseLeave = () => {
@@ -44,6 +47,7 @@ export function AppIcon({ app, onClick, onLongPress }: AppIconProps) {
       longPressTimeout.current = null;
     }
     isLongPressed.current = false; 
+    pressEventRef.current = null; 
   };
 
 
@@ -80,3 +84,4 @@ export function AppIcon({ app, onClick, onLongPress }: AppIconProps) {
     </button>
   );
 }
+
