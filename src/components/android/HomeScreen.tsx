@@ -5,17 +5,16 @@ import React, { useState, useRef } from 'react';
 import { AppIcon } from './AppIcon';
 import type { AppDefinition, AppId } from './AndroidMockup';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { Info, Trash2, Share2, Pencil } from 'lucide-react';
-import { cn } from '@/lib/utils'; 
-import type { ClassValue } from "clsx"; 
-import { twMerge } from "tailwind-merge"; 
-import { clsx } from "clsx"; 
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 
 interface HomeScreenProps {
   apps: AppDefinition[];
   onAppClick: (appId: AppId) => void;
-  phoneScreenRef: React.RefObject<HTMLDivElement>; // Added for popover boundary
+  phoneScreenRef: React.RefObject<HTMLDivElement>;
 }
 
 const DOCK_APP_IDS: AppId[] = ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA'];
@@ -54,12 +53,10 @@ export function HomeScreen({ apps, onAppClick, phoneScreenRef }: HomeScreenProps
   const handleAppLongPress = (appId: AppId, targetRect: DOMRect) => {
     const app = apps.find(a => a.id === appId);
     if (app && popoverTriggerRef.current && targetRect) {
-      // Position the invisible trigger based on the actual icon's position relative to the viewport
-      // The PopoverContent will then try to stay within its collisionBoundary (phoneScreenRef)
       popoverTriggerRef.current.style.top = `${targetRect.top + targetRect.height / 2}px`;
       popoverTriggerRef.current.style.left = `${targetRect.left + targetRect.width / 2}px`;
-      popoverTriggerRef.current.style.width = `0px`; // Invisible trigger
-      popoverTriggerRef.current.style.height = `0px`; // Invisible trigger
+      popoverTriggerRef.current.style.width = `0px`; 
+      popoverTriggerRef.current.style.height = `0px`;
 
       setLongPressedApp(app);
       setIsContextMenuOpen(true);
@@ -82,8 +79,7 @@ export function HomeScreen({ apps, onAppClick, phoneScreenRef }: HomeScreenProps
 
   const closeContextMenu = () => {
     setIsContextMenuOpen(false);
-    // Delay clearing longPressedApp to allow Popover to animate out smoothly
-    setTimeout(() => setLongPressedApp(null), 150); // Adjust timing as needed
+    setTimeout(() => setLongPressedApp(null), 150); 
   };
 
   return (
@@ -123,25 +119,43 @@ export function HomeScreen({ apps, onAppClick, phoneScreenRef }: HomeScreenProps
         </div>
       </div>
 
-      {/* Popover for Context Menu. It's outside the blurred div. */}
-      {/* The PopoverTrigger is an invisible div positioned by JS. */}
       <Popover open={isContextMenuOpen} onOpenChange={setIsContextMenuOpen}>
         <PopoverTrigger ref={popoverTriggerRef} style={{ position: 'fixed', opacity: 0, pointerEvents: 'none' }} />
         {longPressedApp && (
           <PopoverContent
-            className="w-56 bg-card p-1.5 shadow-xl rounded-2xl border"
-            side="top" // Prefer top, but will adjust based on collision
+            className="w-64 bg-card p-0 shadow-xl rounded-2xl border flex flex-col" // Increased width, removed padding for internal control
+            side="top"
             align="center"
             sideOffset={10}
-            collisionBoundary={phoneScreenRef.current} // Key change for containment
-            onOpenAutoFocus={(e) => e.preventDefault()} // Prevents focus stealing
-            onInteractOutside={closeContextMenu} // Close when clicking outside
-            sticky="partial" // Helps keep it attached if trigger scrolls (though trigger is fixed)
+            collisionBoundary={phoneScreenRef.current}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onInteractOutside={closeContextMenu}
+            sticky="partial"
           >
-            <ContextMenuItem icon={Info} text="App info" onClick={handleNavigateToAppInfo} />
-            <ContextMenuItem icon={Trash2} text="Uninstall" onClick={() => { console.log('Uninstall:', longPressedApp.name); closeContextMenu(); }} />
-            <ContextMenuItem icon={Share2} text="Share" onClick={() => { console.log('Share:', longPressedApp.name); closeContextMenu(); }} />
-            <ContextMenuItem icon={Pencil} text="Edit" onClick={() => { console.log('Edit:', longPressedApp.name); closeContextMenu(); }} />
+            <div className="flex flex-col items-center justify-center pt-4 pb-3">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center overflow-hidden mb-2 shadow-md ${longPressedApp.iconUri ? '' : (longPressedApp.bgColor || 'bg-gray-200')}`}>
+                {longPressedApp.iconUri ? (
+                  <Image
+                    src={longPressedApp.iconUri}
+                    alt={`${longPressedApp.name} icon`}
+                    width={56}
+                    height={56}
+                    className="object-cover w-full h-full"
+                    data-ai-hint="app icon"
+                  />
+                ) : (
+                  <longPressedApp.icon className="w-7 h-7 text-white" />
+                )}
+              </div>
+              <p className="text-base font-medium text-popover-foreground">{longPressedApp.name}</p>
+            </div>
+            <Separator className="mb-1" />
+            <div className="p-1.5">
+              <ContextMenuItem icon={Info} text="App info" onClick={handleNavigateToAppInfo} />
+              <ContextMenuItem icon={Trash2} text="Uninstall" onClick={() => { console.log('Uninstall:', longPressedApp.name); closeContextMenu(); }} />
+              <ContextMenuItem icon={Share2} text="Share" onClick={() => { console.log('Share:', longPressedApp.name); closeContextMenu(); }} />
+              <ContextMenuItem icon={Pencil} text="Edit" onClick={() => { console.log('Edit:', longPressedApp.name); closeContextMenu(); }} />
+            </div>
           </PopoverContent>
         )}
       </Popover>
