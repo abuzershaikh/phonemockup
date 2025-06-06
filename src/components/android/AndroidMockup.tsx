@@ -9,6 +9,7 @@ import { SettingsApp } from './apps/SettingsApp';
 import { MessagesApp } from './apps/MessagesApp';
 import { CameraApp } from './apps/CameraApp';
 import { PlaceholderApp } from './apps/PlaceholderApp';
+import { DisplaySettingsApp } from './apps/settings/DisplaySettingsApp'; // New import
 import { NotificationPanel, type Notification } from './NotificationPanel';
 import { RecentsScreen } from './RecentsScreen';
 import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone } from 'lucide-react';
@@ -91,7 +92,14 @@ export function AndroidMockup() {
     setCurrentScreen(appId);
     setNavigationStack(prev => {
       const newStack = [...prev, appId];
-      return newStack.slice(Math.max(0, newStack.length - 10));
+      // Keep navigation stack lean for performance, especially with settings
+      if (newStack.length > 15) {
+        // Remove oldest entries beyond a certain limit, keeping a few base ones like HOME
+        const homeIndex = newStack.indexOf('HOME');
+        const essentialBase = homeIndex !== -1 ? newStack.slice(0, homeIndex + 1) : ['HOME'];
+        return [...essentialBase, ...newStack.slice(newStack.length - 10)];
+      }
+      return newStack;
     });
 
     if (appId !== 'HOME' && appId !== 'RECENTS' && !appId.startsWith('SETTINGS_')) {
@@ -166,6 +174,8 @@ export function AndroidMockup() {
         return <CameraApp />;
       case 'RECENTS':
         return <RecentsScreen recentApps={recentApps.map(id => initialApps.find(app => app.id === id)).filter(Boolean) as AppDefinition[]} onAppClick={navigateTo} onClearApp={removeFromRecents} onClearAll={() => setRecentApps([])} />;
+      case 'SETTINGS_DISPLAY': // New case
+        return <DisplaySettingsApp />;
       case 'PHONE':
       case 'CHROME':
       case 'PHOTOS':
@@ -177,7 +187,6 @@ export function AndroidMockup() {
       case 'SETTINGS_BATTERY':
       case 'SETTINGS_STORAGE':
       case 'SETTINGS_SOUND':
-      case 'SETTINGS_DISPLAY':
       case 'SETTINGS_WALLPAPER':
       case 'SETTINGS_ACCESSIBILITY':
       case 'SETTINGS_SECURITY':
@@ -188,6 +197,10 @@ export function AndroidMockup() {
       case 'SETTINGS_ABOUT_PHONE':
         return <PlaceholderApp appName={appName} />;
       default:
+        // Attempt to find if it's a settings sub-page based on naming convention
+        if (currentScreen.startsWith('SETTINGS_')) {
+          return <PlaceholderApp appName={appName || `Settings: ${currentScreen.replace('SETTINGS_', '')}`} />;
+        }
         return <HomeScreen apps={initialApps.filter(app => ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA', 'SETTINGS', 'PHOTOS', 'PLAY_STORE'].includes(app.id))} onAppClick={navigateTo} />;
     }
   };
