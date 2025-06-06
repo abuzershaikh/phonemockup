@@ -19,7 +19,7 @@ import {
   MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, 
   BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, 
   UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, 
-  Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info 
+  Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info, StickyNote, Map
 } from 'lucide-react';
 
 // AppId is now a generic string to support dynamic app IDs
@@ -41,6 +41,21 @@ const initialAppsData: AppDefinition[] = [
   { id: 'SETTINGS', name: 'Settings', icon: Settings, bgColor: 'bg-gray-500' },
   { id: 'PHOTOS', name: 'Photos', icon: ImageIcon, bgColor: 'bg-purple-500' },
   { id: 'PLAY_STORE', name: 'Play Store', icon: Play, bgColor: 'bg-teal-500' },
+  // Example preloaded apps with icons from public folder (using placeholders for demonstration)
+  { 
+    id: 'PRELOADED_NOTES', 
+    name: 'My Notes', 
+    icon: StickyNote, // Fallback Lucide icon
+    iconUri: 'https://placehold.co/48x48.png?text=Notes', // Replace with '/app-icons/my_notes_icon.png'
+    bgColor: 'bg-yellow-500' 
+  },
+  { 
+    id: 'PRELOADED_TRAVEL', 
+    name: 'Travel Planner', 
+    icon: Map, // Fallback Lucide icon
+    iconUri: 'https://placehold.co/48x48.png?text=Travel', // Replace with '/app-icons/travel_planner_icon.png'
+    bgColor: 'bg-cyan-500' 
+  },
   // Settings "apps" - these don't appear on home screen but are destinations for navigation
   { id: 'SETTINGS_NETWORK', name: 'Network & internet', icon: Wifi },
   { id: 'SETTINGS_CONNECTED_DEVICES', name: 'Connected devices', icon: Bluetooth },
@@ -107,7 +122,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
   }, [appsState]);
 
   const navigateTo = useCallback((appId: AppId) => {
-    if (appId === currentScreen && appId !== 'HOME') return;
+    if (currentScreen === appId && appId !== 'HOME') return;
 
     setCurrentScreen(appId);
     setNavigationStack(prev => {
@@ -120,7 +135,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       return newStack;
     });
 
-    if (appId !== 'HOME' && appId !== 'RECENTS' && !appId.startsWith('SETTINGS_') && !appId.startsWith('USER_APP_')) {
+    if (appId !== 'HOME' && appId !== 'RECENTS' && !appId.startsWith('SETTINGS_') && !appId.startsWith('USER_APP_') && !appId.startsWith('PRELOADED_')) {
         setRecentApps(prev => {
             const filtered = prev.filter(id => id !== appId);
             const newRecents = [appId, ...filtered];
@@ -225,7 +240,6 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
 
     switch (currentScreen) {
       case 'HOME':
-        // Pass all apps to HomeScreen; it will filter dock vs grid apps
         return <HomeScreen apps={appsState} onAppClick={navigateTo} />;
       case 'SETTINGS':
         return <SettingsApp onNavigate={navigateTo} />;
@@ -252,6 +266,8 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       case 'CHROME':
       case 'PHOTOS':
       case 'PLAY_STORE':
+      case 'PRELOADED_NOTES': // Example preloaded app
+      case 'PRELOADED_TRAVEL': // Example preloaded app
       case 'SETTINGS_CONNECTED_DEVICES':
       case 'SETTINGS_NOTIFICATIONS':
       case 'SETTINGS_BATTERY':
@@ -278,14 +294,14 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       case 'SETTINGS_CS_PRINT':
         return <PlaceholderApp appName={appName} />;
       default:
-        // Handle App Info screens for system, settings, and user apps
+        // Handle App Info screens for system, settings, user, and preloaded apps
         if (currentScreen.startsWith('SETTINGS_APP_INFO_')) {
           const potentialAppId = currentScreen.substring('SETTINGS_APP_INFO_'.length);
           const targetAppDef = getAppDefinition(potentialAppId);
           return <PlaceholderApp appName={targetAppDef ? `App info: ${targetAppDef.name}` : `App Info: ${potentialAppId}`} />;
         }
-        // Handle User Apps directly (if they were to be "opened")
-        if (currentScreen.startsWith('USER_APP_')) {
+        // Handle User Apps and Preloaded Apps directly (if they were to be "opened")
+        if (currentScreen.startsWith('USER_APP_') || currentScreen.startsWith('PRELOADED_')) {
            return <PlaceholderApp appName={appName} />;
         }
         // Fallback for other settings screens not yet explicitly defined
@@ -336,3 +352,4 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
 });
 
 AndroidMockup.displayName = 'AndroidMockup';
+
