@@ -25,8 +25,11 @@ const DOCK_APP_IDS: AppId[] = ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA'];
 
 export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
   const dockApps = apps.filter(app => DOCK_APP_IDS.includes(app.id));
-  // Home screen apps are all apps *not* in the dock
-  const homeScreenApps = apps.filter(app => !DOCK_APP_IDS.includes(app.id));
+  // Home screen apps are all apps *not* in the dock and not internal settings screens
+  const homeScreenApps = apps.filter(app => 
+    !DOCK_APP_IDS.includes(app.id) && 
+    !app.id.startsWith('SETTINGS_')
+  );
 
   const [longPressedApp, setLongPressedApp] = useState<AppDefinition | null>(null);
   const [isAppInfoDialogOpen, setIsAppInfoDialogOpen] = useState(false);
