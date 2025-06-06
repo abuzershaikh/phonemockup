@@ -6,18 +6,19 @@ import { AndroidMockup, type AppId } from '@/components/android/AndroidMockup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
-import { Settings as SettingsIcon, MessageSquare, Folder } from 'lucide-react'; // Added Folder icon
+import { Settings as SettingsIcon, MessageSquare, Folder } from 'lucide-react';
 
-// Define the interface for the methods exposed by AndroidMockup
 export interface AndroidMockupHandles {
   navigateToPath: (path: AppId[]) => Promise<void>;
   setDataSaverEnabled: (enabled: boolean) => Promise<void>;
-  getCurrentScreen: () => AppId; // Helper to potentially check current screen if needed
+  setAppIcon: (appId: AppId, iconUri: string) => Promise<void>;
+  getCurrentScreen: () => AppId;
 }
 
 export default function Home() {
   const [command, setCommand] = useState('');
   const androidMockupRef = useRef<AndroidMockupHandles>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
 
@@ -55,9 +56,34 @@ export default function Home() {
   };
 
   const handleFileManagerClick = () => {
-    // Placeholder for file manager functionality
-    setFeedbackMessage('File Manager clicked. Functionality to be implemented.');
-    console.log("File Manager icon clicked");
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && androidMockupRef.current) {
+      if (!file.type.startsWith('image/')) {
+        setFeedbackMessage('Please select an image file.');
+        if(event.target) event.target.value = ''; // Reset file input
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const dataUri = reader.result as string;
+        try {
+          // For this example, we'll change the Messages app icon.
+          // In a real app, you'd have a way to select which app to change.
+          await androidMockupRef.current?.setAppIcon('MESSAGES', dataUri);
+          setFeedbackMessage(`Selected image "${file.name}" and updated Messages app icon.`);
+        } catch (error) {
+          console.error("Error setting app icon:", error);
+          setFeedbackMessage('Failed to set app icon.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+     if(event.target) event.target.value = ''; // Reset file input to allow selecting the same file again
   };
 
   return (
@@ -66,11 +92,19 @@ export default function Home() {
         <AndroidMockup ref={androidMockupRef} />
       </main>
       
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileSelected} 
+        style={{ display: 'none' }} 
+        accept="image/*"
+      />
+
       <Button 
         variant="outline" 
         size="icon" 
-        className="fixed top-4 right-16 z-50 bg-card hover:bg-accent text-foreground" // Positioned to the left of the command panel button
-        aria-label="Open File Manager"
+        className="fixed top-4 right-16 z-50 bg-card hover:bg-accent text-foreground"
+        aria-label="Open File Manager to change app icon"
         onClick={handleFileManagerClick}
       >
         <Folder className="h-5 w-5" />
@@ -93,6 +127,7 @@ export default function Home() {
             <SheetDescription className="text-muted-foreground">
               Enter commands to interact with the Android mockup.
               Try: "turn data saver on" or "turn data saver off".
+              Click the Folder icon to change the Messages app icon.
             </SheetDescription>
           </SheetHeader>
           <div className="flex-grow py-4 space-y-4">

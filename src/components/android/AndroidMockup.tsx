@@ -16,7 +16,7 @@ import { AppsSettingsApp } from './apps/settings/AppsSettingsApp';
 import { NotificationPanel, type Notification } from './NotificationPanel';
 import { RecentsScreen } from './RecentsScreen';
 import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info } from 'lucide-react';
-import type { AndroidMockupHandles } from '@/app/page'; // Import the interface
+import type { AndroidMockupHandles } from '@/app/page';
 
 export type AppId = 
   | 'HOME' 
@@ -67,11 +67,12 @@ export type AppId =
 export interface AppDefinition {
   id: AppId;
   name: string;
-  icon: React.ElementType;
+  icon: React.ElementType; // For Lucide icons
+  iconUri?: string; // For custom image URIs
   bgColor?: string;
 }
 
-const initialApps: AppDefinition[] = [
+const initialAppsData: AppDefinition[] = [
   { id: 'PHONE', name: 'Phone', icon: Phone, bgColor: 'bg-green-500' },
   { id: 'MESSAGES', name: 'Messages', icon: MessageSquare, bgColor: 'bg-blue-500' },
   { id: 'CHROME', name: 'Chrome', icon: Chrome, bgColor: 'bg-yellow-400' },
@@ -116,10 +117,6 @@ const initialApps: AppDefinition[] = [
   { id: 'SETTINGS_APP_INFO_PLAY_STORE', name: 'App info: Play Store', icon: Info },
 ];
 
-export const getAppDefinition = (appId: AppId): AppDefinition | undefined => {
-    return initialApps.find(app => app.id === appId);
-};
-
 export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) => {
   const [currentScreen, setCurrentScreen] = useState<AppId>('HOME');
   const [navigationStack, setNavigationStack] = useState<AppId[]>(['HOME']);
@@ -129,9 +126,12 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
     { id: '2', appIcon: Settings, appName: 'System Update', title: 'Update available', text: 'New security patch ready to install.', time: '1h ago' },
   ]);
   const [recentApps, setRecentApps] = useState<AppId[]>([]);
-
-  // Lifted state for Data Saver
   const [dataSaverEnabled, setDataSaverEnabledInternal] = useState(false);
+  const [appsState, setAppsState] = useState<AppDefinition[]>(initialAppsData);
+
+  const getAppDefinition = useCallback((appId: AppId): AppDefinition | undefined => {
+    return appsState.find(app => app.id === appId);
+  }, [appsState]);
 
   const navigateTo = useCallback((appId: AppId) => {
     if (appId === currentScreen && appId !== 'HOME') return;
@@ -139,7 +139,6 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
     setCurrentScreen(appId);
     setNavigationStack(prev => {
       const newStack = [...prev, appId];
-      // Simple stack depth management
       if (newStack.length > 15) {
         const homeIndex = newStack.indexOf('HOME');
         const essentialBase = homeIndex !== -1 ? newStack.slice(0, homeIndex + 1) : ['HOME'];
@@ -156,24 +155,26 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         });
     }
     setShowNotifications(false); 
-  }, [currentScreen]);
+  }, [currentScreen, appsState]); // Added appsState dependency
 
-  // Expose methods via useImperativeHandle
   useImperativeHandle(ref, () => ({
     navigateToPath: async (path: AppId[]) => {
       for (const appId of path) {
         navigateTo(appId);
-        // Wait for screen transition to be somewhat visible
         await new Promise(resolve => setTimeout(resolve, 700)); 
       }
     },
     setDataSaverEnabled: async (enabled: boolean) => {
       setDataSaverEnabledInternal(enabled);
-      // Ensure the UI updates if on the correct screen
-      if(currentScreen === 'SETTINGS_NETWORK') {
-        // No direct action needed here if NetworkInternetSettingsApp re-renders with new prop
-      }
-      await new Promise(resolve => setTimeout(resolve, 100)); // small delay for state to propagate
+      await new Promise(resolve => setTimeout(resolve, 100));
+    },
+    setAppIcon: async (appId: AppId, iconUri: string) => {
+      setAppsState(prevApps => 
+        prevApps.map(app => 
+          app.id === appId ? { ...app, iconUri: iconUri, icon: ImageIcon } : app // Using ImageIcon as a placeholder if icon is also needed
+        )
+      );
+      await new Promise(resolve => setTimeout(resolve, 100));
     },
     getCurrentScreen: () => currentScreen,
   }));
@@ -228,10 +229,12 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
   const renderScreen = () => {
     const appDefinition = getAppDefinition(currentScreen);
     const appName = appDefinition?.name || 'App';
+    const homeScreenAppIds: AppId[] = ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA', 'SETTINGS', 'PHOTOS', 'PLAY_STORE'];
+
 
     switch (currentScreen) {
       case 'HOME':
-        return <HomeScreen apps={initialApps.filter(app => ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA', 'SETTINGS', 'PHOTOS', 'PLAY_STORE'].includes(app.id))} onAppClick={navigateTo} />;
+        return <HomeScreen apps={appsState.filter(app => homeScreenAppIds.includes(app.id))} onAppClick={navigateTo} />;
       case 'SETTINGS':
         return <SettingsApp onNavigate={navigateTo} />;
       case 'MESSAGES':
@@ -239,7 +242,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       case 'CAMERA':
         return <CameraApp />;
       case 'RECENTS':
-        return <RecentsScreen recentApps={recentApps.map(id => initialApps.find(app => app.id === id)).filter(Boolean) as AppDefinition[]} onAppClick={navigateTo} onClearApp={removeFromRecents} onClearAll={() => setRecentApps([])} />;
+        return <RecentsScreen recentApps={recentApps.map(id => getAppDefinition(id)).filter(Boolean) as AppDefinition[]} onAppClick={navigateTo} onClearApp={removeFromRecents} onClearAll={() => setRecentApps([])} />;
       case 'SETTINGS_DISPLAY':
         return <DisplaySettingsApp onNavigate={navigateTo} />;
       case 'SETTINGS_NETWORK':
@@ -251,7 +254,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       case 'SETTINGS_NETWORK_CONNECTION_SHARING':
         return <ConnectionSharingSettingsApp onNavigate={navigateTo} />;
       case 'SETTINGS_APPS':
-        return <AppsSettingsApp onNavigate={navigateTo} appDefinitions={initialApps} />;
+        return <AppsSettingsApp onNavigate={navigateTo} appDefinitions={appsState} />;
       case 'PHONE':
       case 'CHROME':
       case 'PHOTOS':
@@ -292,7 +295,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         if (currentScreen.startsWith('SETTINGS_')) {
           return <PlaceholderApp appName={appName || `Settings: ${currentScreen.replace('SETTINGS_', '')}`} />;
         }
-        return <HomeScreen apps={initialApps.filter(app => ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA', 'SETTINGS', 'PHOTOS', 'PLAY_STORE'].includes(app.id))} onAppClick={navigateTo} />;
+        return <HomeScreen apps={appsState.filter(app => homeScreenAppIds.includes(app.id))} onAppClick={navigateTo} />;
     }
   };
 
@@ -313,7 +316,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       
       <div className="flex-grow bg-android-background rounded-[2rem] overflow-hidden flex flex-col relative">
         <StatusBar onToggleNotifications={toggleNotificationPanel} notificationCount={notifications.length} />
-        <div className="flex-grow overflow-y-auto relative screen-content" key={currentScreen}>
+        <div className="flex-grow overflow-y-auto relative screen-content" key={`${currentScreen}-${appsState.find(a => a.id === 'MESSAGES')?.iconUri}`}> {/* Add iconUri to key to force re-render */}
           {renderScreen()}
         </div>
         <NavigationBar onHome={goHome} onBack={goBack} onRecents={toggleRecents} />

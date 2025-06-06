@@ -4,18 +4,18 @@
 import React from 'react';
 import { AppScreen } from '../../AppScreen';
 import type { AppId, AppDefinition } from '../../AndroidMockup';
-import { getAppDefinition } from '../../AndroidMockup'; // Helper to get app details
+// Removed getAppDefinition import as appDefinitions is passed directly
 import { ChevronRight, AppWindow } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image'; // For custom icons
 
 interface AppsSettingsAppProps {
   onNavigate: (appId: AppId) => void;
-  appDefinitions: AppDefinition[]; // Pass all app definitions
+  appDefinitions: AppDefinition[]; 
 }
 
-// Define which apps are considered "system" or primary apps for listing
 const listedAppIds: AppId[] = [
   'PHONE', 
   'MESSAGES', 
@@ -26,10 +26,8 @@ const listedAppIds: AppId[] = [
   'PLAY_STORE'
 ];
 
-// Helper function to generate the App Info AppId
 const getAppInfoScreenId = (appId: AppId): AppId | null => {
-  const baseId = appId.replace('SETTINGS_', ''); // Remove SETTINGS_ prefix if any
-  // Ensure we only try to create AppInfo for known apps
+  const baseId = appId.replace('SETTINGS_', ''); 
   if (listedAppIds.includes(appId as AppId) || listedAppIds.some(id => id.endsWith(baseId))) {
     return `SETTINGS_APP_INFO_${baseId.toUpperCase()}` as AppId;
   }
@@ -42,19 +40,21 @@ export function AppsSettingsApp({ onNavigate, appDefinitions }: AppsSettingsAppP
     .map(id => appDefinitions.find(appDef => appDef.id === id))
     .filter(Boolean) as AppDefinition[];
 
+  // Count user-facing apps (those with bgColor or iconUri are considered as such for this example)
+  const userFacingAppCount = appDefinitions.filter(app => app.bgColor || app.iconUri).length;
+
+
   return (
     <AppScreen appName="Apps">
       <div className="flex flex-col h-full">
         <div className="p-4 border-b border-border">
             <Button variant="outline" className="w-full justify-start text-base" onClick={() => console.log("See all apps clicked")}>
-                See all {appDefinitions.filter(app => app.bgColor).length} apps 
-                {/* Assuming apps with bgColor are user-facing apps */}
+                See all {userFacingAppCount} apps 
             </Button>
         </div>
         
         <div className="p-4">
             <h2 className="text-sm font-medium text-primary mb-2">DEFAULT APPS</h2>
-            {/* Placeholder for default apps, could be a component later */}
             <div className="space-y-1">
                 <DefaultAppItem title="Home app" currentApp="Pixel Launcher" onClick={() => console.log("Change Home app")} />
                 <DefaultAppItem title="Browser app" currentApp="Chrome" onClick={() => console.log("Change Browser app")} />
@@ -81,8 +81,19 @@ export function AppsSettingsApp({ onNavigate, appDefinitions }: AppsSettingsAppP
                     disabled={!appInfoScreenId}
                     aria-label={`App info for ${app.name}`}
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${app.bgColor || 'bg-gray-200'} flex-shrink-0`}>
-                      <AppIconComponent className="w-4 h-4 text-white" />
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${app.iconUri ? '' : (app.bgColor || 'bg-gray-200')} flex-shrink-0`}>
+                      {app.iconUri ? (
+                        <Image 
+                            src={app.iconUri} 
+                            alt={`${app.name} icon`} 
+                            width={32} 
+                            height={32} 
+                            className="object-cover w-full h-full"
+                            data-ai-hint="app icon"
+                        />
+                      ) : (
+                        <AppIconComponent className="w-4 h-4 text-white" />
+                      )}
                     </div>
                     <div className="flex-grow overflow-hidden">
                       <p className="font-medium text-android-primary-text truncate">{app.name}</p>

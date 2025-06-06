@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -28,12 +29,22 @@ export function RecentsScreen({ recentApps, onAppClick, onClearApp, onClearAll }
                 className="bg-neutral-700/80 rounded-lg p-3 flex items-center space-x-3 shadow-lg cursor-pointer transition-all hover:bg-neutral-600/80 active:scale-95"
                 onClick={() => onAppClick(app.id)}
               >
-                <div className={`w-10 h-10 rounded-md flex items-center justify-center ${app.bgColor || 'bg-gray-500'}`}>
-                  <AppIconComponent className="w-5 h-5 text-white" />
+                <div className={`w-10 h-10 rounded-md flex items-center justify-center overflow-hidden ${app.iconUri ? '' : (app.bgColor || 'bg-gray-500')}`}>
+                  {app.iconUri ? (
+                     <Image 
+                        src={app.iconUri} 
+                        alt={`${app.name} icon`} 
+                        width={40} 
+                        height={40} 
+                        className="object-cover w-full h-full"
+                        data-ai-hint="app icon"
+                      />
+                  ) : (
+                    <AppIconComponent className="w-5 h-5 text-white" />
+                  )}
                 </div>
                 <div className="flex-grow">
                   <p className="font-medium">{app.name}</p>
-                  {/* Placeholder for app preview - could be a static image or color block */}
                    <div className="w-full h-16 bg-neutral-600 rounded mt-1 flex items-center justify-center text-xs text-neutral-400" data-ai-hint="app preview">
                      App Preview
                    </div>

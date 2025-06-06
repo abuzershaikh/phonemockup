@@ -38,11 +38,8 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
 
   const handleNavigateToAppInfo = () => {
     if (!longPressedApp) return;
-
-    // Construct the App Info Screen ID. Example: 'PHONE' -> 'SETTINGS_APP_INFO_PHONE'
-    const appInfoScreenId = `SETTINGS_APP_INFO_${longPressedApp.id.toUpperCase()}` as AppId;
     
-    // We assume AppId for AppInfoScreen is valid and handled in AndroidMockup.tsx
+    const appInfoScreenId = `SETTINGS_APP_INFO_${longPressedApp.id.toUpperCase()}` as AppId;
     onAppClick(appInfoScreenId);
     setIsAppInfoDialogOpen(false);
     setLongPressedApp(null);
