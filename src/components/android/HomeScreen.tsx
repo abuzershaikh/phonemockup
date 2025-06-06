@@ -1,8 +1,19 @@
+
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AppIcon } from './AppIcon';
 import type { AppDefinition, AppId } from './AndroidMockup';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
 
 interface HomeScreenProps {
   apps: AppDefinition[];
@@ -10,11 +21,32 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
-  // Example: Define which apps are in the dock
   const dockAppIds: AppId[] = ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA'];
   const dockApps = apps.filter(app => dockAppIds.includes(app.id));
   const homeScreenApps = apps.filter(app => !dockAppIds.includes(app.id));
 
+  const [longPressedApp, setLongPressedApp] = useState<AppDefinition | null>(null);
+  const [isAppInfoDialogOpen, setIsAppInfoDialogOpen] = useState(false);
+
+  const handleAppLongPress = (appId: AppId) => {
+    const app = apps.find(a => a.id === appId);
+    if (app) {
+      setLongPressedApp(app);
+      setIsAppInfoDialogOpen(true);
+    }
+  };
+
+  const handleNavigateToAppInfo = () => {
+    if (!longPressedApp) return;
+
+    // Construct the App Info Screen ID. Example: 'PHONE' -> 'SETTINGS_APP_INFO_PHONE'
+    const appInfoScreenId = `SETTINGS_APP_INFO_${longPressedApp.id.toUpperCase()}` as AppId;
+    
+    // We assume AppId for AppInfoScreen is valid and handled in AndroidMockup.tsx
+    onAppClick(appInfoScreenId);
+    setIsAppInfoDialogOpen(false);
+    setLongPressedApp(null);
+  };
 
   return (
     <div className="h-full flex flex-col bg-android-background p-4 overflow-y-auto">
@@ -36,7 +68,7 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
       
       <div className="grid grid-cols-4 gap-x-4 gap-y-6 flex-grow content-start">
         {homeScreenApps.map((app) => (
-          <AppIcon key={app.id} app={app} onClick={onAppClick} />
+          <AppIcon key={app.id} app={app} onClick={onAppClick} onLongPress={handleAppLongPress} />
         ))}
       </div>
 
@@ -44,10 +76,36 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
       <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700/50">
         <div className="grid grid-cols-4 gap-x-2">
           {dockApps.map((app) => (
-            <AppIcon key={app.id} app={app} onClick={onAppClick} />
+            <AppIcon key={app.id} app={app} onClick={onAppClick} onLongPress={handleAppLongPress} />
           ))}
         </div>
       </div>
+
+      {/* App Info Dialog */}
+      {longPressedApp && (
+        <AlertDialog open={isAppInfoDialogOpen} onOpenChange={(open) => {
+          setIsAppInfoDialogOpen(open);
+          if (!open) setLongPressedApp(null);
+        }}>
+          <AlertDialogContent className="bg-card text-card-foreground">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{longPressedApp.name}</AlertDialogTitle>
+              <AlertDialogDescription>
+                Select an action for {longPressedApp.name}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                  setIsAppInfoDialogOpen(false);
+                  setLongPressedApp(null);
+              }}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleNavigateToAppInfo}>
+                App info
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
