@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { StatusBar } from './StatusBar';
 import { NavigationBar } from './NavigationBar';
 import { HomeScreen } from './HomeScreen';
@@ -12,10 +12,11 @@ import { PlaceholderApp } from './apps/PlaceholderApp';
 import { DisplaySettingsApp } from './apps/settings/DisplaySettingsApp';
 import { NetworkInternetSettingsApp } from './apps/settings/NetworkInternetSettingsApp';
 import { ConnectionSharingSettingsApp } from './apps/settings/ConnectionSharingSettingsApp';
-import { AppsSettingsApp } from './apps/settings/AppsSettingsApp'; // New import
+import { AppsSettingsApp } from './apps/settings/AppsSettingsApp';
 import { NotificationPanel, type Notification } from './NotificationPanel';
 import { RecentsScreen } from './RecentsScreen';
-import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info } from 'lucide-react'; // Added ShieldIcon alias and Info
+import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info } from 'lucide-react';
+import type { AndroidMockupHandles } from '@/app/page'; // Import the interface
 
 export type AppId = 
   | 'HOME' 
@@ -55,7 +56,6 @@ export type AppId =
   | 'SETTINGS_CS_ANDROID_AUTO'
   | 'SETTINGS_CS_SCREENCAST'
   | 'SETTINGS_CS_PRINT'
-  // App Info Screen IDs
   | 'SETTINGS_APP_INFO_PHONE'
   | 'SETTINGS_APP_INFO_MESSAGES'
   | 'SETTINGS_APP_INFO_CHROME'
@@ -68,7 +68,7 @@ export interface AppDefinition {
   id: AppId;
   name: string;
   icon: React.ElementType;
-  bgColor?: string; // Optional background color for the icon tile
+  bgColor?: string;
 }
 
 const initialApps: AppDefinition[] = [
@@ -79,7 +79,6 @@ const initialApps: AppDefinition[] = [
   { id: 'SETTINGS', name: 'Settings', icon: Settings, bgColor: 'bg-gray-500' },
   { id: 'PHOTOS', name: 'Photos', icon: ImageIcon, bgColor: 'bg-purple-500' },
   { id: 'PLAY_STORE', name: 'Play Store', icon: Play, bgColor: 'bg-teal-500' },
-  // Internal "apps" for settings pages, not shown on home screen
   { id: 'SETTINGS_NETWORK', name: 'Network & internet', icon: Wifi },
   { id: 'SETTINGS_CONNECTED_DEVICES', name: 'Connected devices', icon: Bluetooth },
   { id: 'SETTINGS_APPS', name: 'Apps', icon: AppWindow },
@@ -108,7 +107,6 @@ const initialApps: AppDefinition[] = [
   { id: 'SETTINGS_CS_ANDROID_AUTO', name: 'Android Auto Settings', icon: Car },
   { id: 'SETTINGS_CS_SCREENCAST', name: 'Screencast Settings', icon: ScreenShare },
   { id: 'SETTINGS_CS_PRINT', name: 'Print Settings', icon: Printer },
-  // App Info placeholder screens
   { id: 'SETTINGS_APP_INFO_PHONE', name: 'App info: Phone', icon: Info },
   { id: 'SETTINGS_APP_INFO_MESSAGES', name: 'App info: Messages', icon: Info },
   { id: 'SETTINGS_APP_INFO_CHROME', name: 'App info: Chrome', icon: Info },
@@ -118,13 +116,11 @@ const initialApps: AppDefinition[] = [
   { id: 'SETTINGS_APP_INFO_PLAY_STORE', name: 'App info: Play Store', icon: Info },
 ];
 
-// Helper function to get AppDefinition by ID
 export const getAppDefinition = (appId: AppId): AppDefinition | undefined => {
     return initialApps.find(app => app.id === appId);
 };
 
-
-export function AndroidMockup() {
+export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) => {
   const [currentScreen, setCurrentScreen] = useState<AppId>('HOME');
   const [navigationStack, setNavigationStack] = useState<AppId[]>(['HOME']);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -134,12 +130,16 @@ export function AndroidMockup() {
   ]);
   const [recentApps, setRecentApps] = useState<AppId[]>([]);
 
+  // Lifted state for Data Saver
+  const [dataSaverEnabled, setDataSaverEnabledInternal] = useState(false);
+
   const navigateTo = useCallback((appId: AppId) => {
     if (appId === currentScreen && appId !== 'HOME') return;
 
     setCurrentScreen(appId);
     setNavigationStack(prev => {
       const newStack = [...prev, appId];
+      // Simple stack depth management
       if (newStack.length > 15) {
         const homeIndex = newStack.indexOf('HOME');
         const essentialBase = homeIndex !== -1 ? newStack.slice(0, homeIndex + 1) : ['HOME'];
@@ -157,6 +157,26 @@ export function AndroidMockup() {
     }
     setShowNotifications(false); 
   }, [currentScreen]);
+
+  // Expose methods via useImperativeHandle
+  useImperativeHandle(ref, () => ({
+    navigateToPath: async (path: AppId[]) => {
+      for (const appId of path) {
+        navigateTo(appId);
+        // Wait for screen transition to be somewhat visible
+        await new Promise(resolve => setTimeout(resolve, 700)); 
+      }
+    },
+    setDataSaverEnabled: async (enabled: boolean) => {
+      setDataSaverEnabledInternal(enabled);
+      // Ensure the UI updates if on the correct screen
+      if(currentScreen === 'SETTINGS_NETWORK') {
+        // No direct action needed here if NetworkInternetSettingsApp re-renders with new prop
+      }
+      await new Promise(resolve => setTimeout(resolve, 100)); // small delay for state to propagate
+    },
+    getCurrentScreen: () => currentScreen,
+  }));
 
   const goBack = useCallback(() => {
     if (showNotifications) {
@@ -223,7 +243,11 @@ export function AndroidMockup() {
       case 'SETTINGS_DISPLAY':
         return <DisplaySettingsApp onNavigate={navigateTo} />;
       case 'SETTINGS_NETWORK':
-        return <NetworkInternetSettingsApp onNavigate={navigateTo} />;
+        return <NetworkInternetSettingsApp 
+                  onNavigate={navigateTo} 
+                  dataSaver={dataSaverEnabled} 
+                  onDataSaverChange={setDataSaverEnabledInternal} 
+                />;
       case 'SETTINGS_NETWORK_CONNECTION_SHARING':
         return <ConnectionSharingSettingsApp onNavigate={navigateTo} />;
       case 'SETTINGS_APPS':
@@ -233,7 +257,6 @@ export function AndroidMockup() {
       case 'PHOTOS':
       case 'PLAY_STORE':
       case 'SETTINGS_CONNECTED_DEVICES':
-      // case 'SETTINGS_APPS': // Handled above now
       case 'SETTINGS_NOTIFICATIONS':
       case 'SETTINGS_BATTERY':
       case 'SETTINGS_STORAGE':
@@ -284,7 +307,6 @@ export function AndroidMockup() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [goBack, navigationStack.length]);
 
-
   return (
     <div className="w-[412px] h-[892px] bg-black rounded-4xl p-3 shadow-phone overflow-hidden flex flex-col relative">
       <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-lg z-50"></div>
@@ -309,5 +331,6 @@ export function AndroidMockup() {
       </div>
     </div>
   );
-}
+});
 
+AndroidMockup.displayName = 'AndroidMockup';

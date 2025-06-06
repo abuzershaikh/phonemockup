@@ -1,6 +1,7 @@
+
 'use client';
 
-import React from 'react';
+import React from 'react'; // Removed useState as dataSaver is now a prop
 import { AppScreen } from '../../AppScreen';
 import type { AppId } from '../../AndroidMockup';
 import { Switch } from '@/components/ui/switch';
@@ -13,7 +14,7 @@ interface SettingItemProps {
   description?: string;
   control?: React.ReactNode;
   onClick?: () => void;
-  appId?: AppId; // For navigation
+  appId?: AppId; 
   warning?: string;
 }
 
@@ -37,10 +38,12 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon: Icon, title, descriptio
 
 interface NetworkInternetSettingsAppProps {
   onNavigate: (appId: AppId) => void;
+  dataSaver: boolean; // Prop for Data Saver state
+  onDataSaverChange: (enabled: boolean) => void; // Prop for changing Data Saver state
 }
 
-export function NetworkInternetSettingsApp({ onNavigate }: NetworkInternetSettingsAppProps) {
-  const [dataSaver, setDataSaver] = React.useState(false);
+export function NetworkInternetSettingsApp({ onNavigate, dataSaver, onDataSaverChange }: NetworkInternetSettingsAppProps) {
+  // const [dataSaver, setDataSaver] = React.useState(false); // State moved to AndroidMockup
   const [adaptiveConnectivity, setAdaptiveConnectivity] = React.useState(true);
 
   const settingsList: SettingItemProps[] = [
@@ -76,7 +79,7 @@ export function NetworkInternetSettingsApp({ onNavigate }: NetworkInternetSettin
       icon: Leaf,
       title: 'Data Saver',
       description: dataSaver ? 'On' : 'Off',
-      control: <Switch checked={dataSaver} onCheckedChange={setDataSaver} id="data-saver-switch" />,
+      control: <Switch checked={dataSaver} onCheckedChange={onDataSaverChange} id="data-saver-switch" />,
     },
     {
       icon: Shield,
@@ -106,7 +109,6 @@ export function NetworkInternetSettingsApp({ onNavigate }: NetworkInternetSettin
         {settingsList.map((item, index) => (
           <React.Fragment key={item.title}>
             <SettingItem {...item} />
-            {/* Add separators logically, e.g., after specific groups of items */}
             {(item.title === 'Connection & sharing' || item.title === 'Data Saver' || item.title === 'Private DNS') && <Separator className="my-1" />}
           </React.Fragment>
         ))}
