@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -10,9 +11,34 @@ import { CameraApp } from './apps/CameraApp';
 import { PlaceholderApp } from './apps/PlaceholderApp';
 import { NotificationPanel, type Notification } from './NotificationPanel';
 import { RecentsScreen } from './RecentsScreen';
-import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play } from 'lucide-react';
+import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone } from 'lucide-react';
 
-export type AppId = 'HOME' | 'SETTINGS' | 'MESSAGES' | 'CAMERA' | 'PHONE' | 'CHROME' | 'PHOTOS' | 'PLAY_STORE' | 'RECENTS';
+export type AppId = 
+  | 'HOME' 
+  | 'SETTINGS' 
+  | 'MESSAGES' 
+  | 'CAMERA' 
+  | 'PHONE' 
+  | 'CHROME' 
+  | 'PHOTOS' 
+  | 'PLAY_STORE' 
+  | 'RECENTS'
+  | 'SETTINGS_NETWORK'
+  | 'SETTINGS_CONNECTED_DEVICES'
+  | 'SETTINGS_APPS'
+  | 'SETTINGS_NOTIFICATIONS'
+  | 'SETTINGS_BATTERY'
+  | 'SETTINGS_STORAGE'
+  | 'SETTINGS_SOUND'
+  | 'SETTINGS_DISPLAY'
+  | 'SETTINGS_WALLPAPER'
+  | 'SETTINGS_ACCESSIBILITY'
+  | 'SETTINGS_SECURITY'
+  | 'SETTINGS_LOCATION'
+  | 'SETTINGS_SAFETY'
+  | 'SETTINGS_ACCOUNTS'
+  | 'SETTINGS_SYSTEM'
+  | 'SETTINGS_ABOUT_PHONE';
 
 export interface AppDefinition {
   id: AppId;
@@ -29,6 +55,23 @@ const initialApps: AppDefinition[] = [
   { id: 'SETTINGS', name: 'Settings', icon: Settings, bgColor: 'bg-gray-500' },
   { id: 'PHOTOS', name: 'Photos', icon: ImageIcon, bgColor: 'bg-purple-500' },
   { id: 'PLAY_STORE', name: 'Play Store', icon: Play, bgColor: 'bg-teal-500' },
+  // Internal "apps" for settings pages, not shown on home screen
+  { id: 'SETTINGS_NETWORK', name: 'Network & internet Settings', icon: Wifi },
+  { id: 'SETTINGS_CONNECTED_DEVICES', name: 'Connected devices Settings', icon: Bluetooth },
+  { id: 'SETTINGS_APPS', name: 'Apps Settings', icon: AppWindow },
+  { id: 'SETTINGS_NOTIFICATIONS', name: 'Notifications Settings', icon: Bell },
+  { id: 'SETTINGS_BATTERY', name: 'Battery Settings', icon: BatteryCharging },
+  { id: 'SETTINGS_STORAGE', name: 'Storage Settings', icon: HardDrive },
+  { id: 'SETTINGS_SOUND', name: 'Sound & vibration Settings', icon: Volume2 },
+  { id: 'SETTINGS_DISPLAY', name: 'Display Settings', icon: SunMedium },
+  { id: 'SETTINGS_WALLPAPER', name: 'Wallpaper & style Settings', icon: Palette },
+  { id: 'SETTINGS_ACCESSIBILITY', name: 'Accessibility Settings', icon: Accessibility },
+  { id: 'SETTINGS_SECURITY', name: 'Security & privacy Settings', icon: Lock },
+  { id: 'SETTINGS_LOCATION', name: 'Location Settings', icon: MapPin },
+  { id: 'SETTINGS_SAFETY', name: 'Safety & emergency Settings', icon: ShieldAlert },
+  { id: 'SETTINGS_ACCOUNTS', name: 'Accounts Settings', icon: UserCircle },
+  { id: 'SETTINGS_SYSTEM', name: 'System Settings', icon: Globe },
+  { id: 'SETTINGS_ABOUT_PHONE', name: 'About phone Settings', icon: Smartphone },
 ];
 
 
@@ -48,18 +91,17 @@ export function AndroidMockup() {
     setCurrentScreen(appId);
     setNavigationStack(prev => {
       const newStack = [...prev, appId];
-      // Limit stack size to avoid excessive memory use, e.g., 10
       return newStack.slice(Math.max(0, newStack.length - 10));
     });
 
-    if (appId !== 'HOME' && appId !== 'RECENTS') {
+    if (appId !== 'HOME' && appId !== 'RECENTS' && !appId.startsWith('SETTINGS_')) {
         setRecentApps(prev => {
             const filtered = prev.filter(id => id !== appId);
             const newRecents = [appId, ...filtered];
-            return newRecents.slice(0, 5); // Keep only last 5 recent apps
+            return newRecents.slice(0, 5); 
         });
     }
-    setShowNotifications(false); // Close notifications on app change
+    setShowNotifications(false); 
   }, [currentScreen]);
 
   const goBack = useCallback(() => {
@@ -69,7 +111,7 @@ export function AndroidMockup() {
     }
     setNavigationStack(prev => {
       if (prev.length <= 1) {
-        setCurrentScreen('HOME'); // Or exit app, but here means go home
+        setCurrentScreen('HOME'); 
         return ['HOME'];
       }
       const newStack = prev.slice(0, -1);
@@ -86,7 +128,7 @@ export function AndroidMockup() {
 
   const toggleRecents = useCallback(() => {
     if (currentScreen === 'RECENTS') {
-      goBack(); // Or navigate to previous app before recents
+      goBack(); 
     } else {
       navigateTo('RECENTS');
     }
@@ -110,11 +152,14 @@ export function AndroidMockup() {
   };
 
   const renderScreen = () => {
+    const appDefinition = initialApps.find(app => app.id === currentScreen);
+    const appName = appDefinition?.name || 'App';
+
     switch (currentScreen) {
       case 'HOME':
-        return <HomeScreen apps={initialApps} onAppClick={navigateTo} />;
+        return <HomeScreen apps={initialApps.filter(app => ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA', 'SETTINGS', 'PHOTOS', 'PLAY_STORE'].includes(app.id))} onAppClick={navigateTo} />;
       case 'SETTINGS':
-        return <SettingsApp />;
+        return <SettingsApp onNavigate={navigateTo} />;
       case 'MESSAGES':
         return <MessagesApp />;
       case 'CAMERA':
@@ -125,19 +170,33 @@ export function AndroidMockup() {
       case 'CHROME':
       case 'PHOTOS':
       case 'PLAY_STORE':
-        return <PlaceholderApp appName={initialApps.find(app => app.id === currentScreen)?.name || 'App'} />;
+      case 'SETTINGS_NETWORK':
+      case 'SETTINGS_CONNECTED_DEVICES':
+      case 'SETTINGS_APPS':
+      case 'SETTINGS_NOTIFICATIONS':
+      case 'SETTINGS_BATTERY':
+      case 'SETTINGS_STORAGE':
+      case 'SETTINGS_SOUND':
+      case 'SETTINGS_DISPLAY':
+      case 'SETTINGS_WALLPAPER':
+      case 'SETTINGS_ACCESSIBILITY':
+      case 'SETTINGS_SECURITY':
+      case 'SETTINGS_LOCATION':
+      case 'SETTINGS_SAFETY':
+      case 'SETTINGS_ACCOUNTS':
+      case 'SETTINGS_SYSTEM':
+      case 'SETTINGS_ABOUT_PHONE':
+        return <PlaceholderApp appName={appName} />;
       default:
-        return <HomeScreen apps={initialApps} onAppClick={navigateTo} />;
+        return <HomeScreen apps={initialApps.filter(app => ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA', 'SETTINGS', 'PHOTOS', 'PLAY_STORE'].includes(app.id))} onAppClick={navigateTo} />;
     }
   };
 
-  // Handle hardware back button (browser back)
   useEffect(() => {
     const handlePopState = () => {
       if (navigationStack.length > 1) {
         goBack();
       }
-      // If already at home, default browser behavior takes over (or do nothing)
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -147,7 +206,6 @@ export function AndroidMockup() {
 
   return (
     <div className="w-[412px] h-[892px] bg-black rounded-4xl p-3 shadow-phone overflow-hidden flex flex-col relative">
-      {/* Notch/Camera cutout area - purely visual */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-lg z-50"></div>
       
       <div className="flex-grow bg-android-background rounded-[2rem] overflow-hidden flex flex-col relative">
