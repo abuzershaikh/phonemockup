@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -11,9 +12,10 @@ import { PlaceholderApp } from './apps/PlaceholderApp';
 import { DisplaySettingsApp } from './apps/settings/DisplaySettingsApp';
 import { NetworkInternetSettingsApp } from './apps/settings/NetworkInternetSettingsApp';
 import { ConnectionSharingSettingsApp } from './apps/settings/ConnectionSharingSettingsApp';
+import { AppsSettingsApp } from './apps/settings/AppsSettingsApp'; // New import
 import { NotificationPanel, type Notification } from './NotificationPanel';
 import { RecentsScreen } from './RecentsScreen';
-import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, Link as LinkIcon, BarChart3, LockKeyhole, Shield } from 'lucide-react';
+import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info } from 'lucide-react'; // Added ShieldIcon alias and Info
 
 export type AppId = 
   | 'HOME' 
@@ -41,18 +43,26 @@ export type AppId =
   | 'SETTINGS_ACCOUNTS'
   | 'SETTINGS_SYSTEM'
   | 'SETTINGS_ABOUT_PHONE'
-  | 'SETTINGS_NETWORK_INTERNET_DETAILS' // Placeholder from NetworkInternetSettingsApp
-  | 'SETTINGS_NETWORK_CALLS_SMS' // Placeholder from NetworkInternetSettingsApp
-  | 'SETTINGS_NETWORK_HOTSPOT_TETHERING' // Placeholder from NetworkInternetSettingsApp
-  | 'SETTINGS_NETWORK_VPN_OVERVIEW' // Placeholder from NetworkInternetSettingsApp
-  | 'SETTINGS_NETWORK_PRIVATE_DNS_OVERVIEW' // Placeholder from NetworkInternetSettingsApp
-  | 'SETTINGS_NETWORK_CONNECTION_SHARING' // Actual new screen
-  | 'SETTINGS_CS_PERSONAL_HOTSPOT' // Placeholder from ConnectionSharingSettingsApp
-  | 'SETTINGS_CS_VPN' // Placeholder from ConnectionSharingSettingsApp
-  | 'SETTINGS_CS_PRIVATE_DNS' // Placeholder from ConnectionSharingSettingsApp
-  | 'SETTINGS_CS_ANDROID_AUTO' // Placeholder from ConnectionSharingSettingsApp
-  | 'SETTINGS_CS_SCREENCAST' // Placeholder from ConnectionSharingSettingsApp
-  | 'SETTINGS_CS_PRINT'; // Placeholder from ConnectionSharingSettingsApp
+  | 'SETTINGS_NETWORK_INTERNET_DETAILS'
+  | 'SETTINGS_NETWORK_CALLS_SMS'
+  | 'SETTINGS_NETWORK_HOTSPOT_TETHERING'
+  | 'SETTINGS_NETWORK_VPN_OVERVIEW'
+  | 'SETTINGS_NETWORK_PRIVATE_DNS_OVERVIEW'
+  | 'SETTINGS_NETWORK_CONNECTION_SHARING'
+  | 'SETTINGS_CS_PERSONAL_HOTSPOT'
+  | 'SETTINGS_CS_VPN'
+  | 'SETTINGS_CS_PRIVATE_DNS'
+  | 'SETTINGS_CS_ANDROID_AUTO'
+  | 'SETTINGS_CS_SCREENCAST'
+  | 'SETTINGS_CS_PRINT'
+  // App Info Screen IDs
+  | 'SETTINGS_APP_INFO_PHONE'
+  | 'SETTINGS_APP_INFO_MESSAGES'
+  | 'SETTINGS_APP_INFO_CHROME'
+  | 'SETTINGS_APP_INFO_CAMERA'
+  | 'SETTINGS_APP_INFO_SETTINGS'
+  | 'SETTINGS_APP_INFO_PHOTOS'
+  | 'SETTINGS_APP_INFO_PLAY_STORE';
 
 export interface AppDefinition {
   id: AppId;
@@ -90,15 +100,28 @@ const initialApps: AppDefinition[] = [
   { id: 'SETTINGS_NETWORK_INTERNET_DETAILS', name: 'Internet Details', icon: Wifi },
   { id: 'SETTINGS_NETWORK_CALLS_SMS', name: 'Calls & SMS Settings', icon: Smartphone },
   { id: 'SETTINGS_NETWORK_HOTSPOT_TETHERING', name: 'Hotspot & tethering Settings', icon: Router },
-  { id: 'SETTINGS_NETWORK_VPN_OVERVIEW', name: 'VPN Settings', icon: Shield },
+  { id: 'SETTINGS_NETWORK_VPN_OVERVIEW', name: 'VPN Settings', icon: ShieldIcon },
   { id: 'SETTINGS_NETWORK_PRIVATE_DNS_OVERVIEW', name: 'Private DNS Settings', icon: LockKeyhole },
   { id: 'SETTINGS_CS_PERSONAL_HOTSPOT', name: 'Personal Hotspot Settings', icon: Router },
-  { id: 'SETTINGS_CS_VPN', name: 'VPN Details (Connection & Sharing)', icon: Shield },
+  { id: 'SETTINGS_CS_VPN', name: 'VPN Details (Connection & Sharing)', icon: ShieldIcon },
   { id: 'SETTINGS_CS_PRIVATE_DNS', name: 'Private DNS Details (Connection & Sharing)', icon: LockKeyhole },
   { id: 'SETTINGS_CS_ANDROID_AUTO', name: 'Android Auto Settings', icon: Car },
   { id: 'SETTINGS_CS_SCREENCAST', name: 'Screencast Settings', icon: ScreenShare },
   { id: 'SETTINGS_CS_PRINT', name: 'Print Settings', icon: Printer },
+  // App Info placeholder screens
+  { id: 'SETTINGS_APP_INFO_PHONE', name: 'App info: Phone', icon: Info },
+  { id: 'SETTINGS_APP_INFO_MESSAGES', name: 'App info: Messages', icon: Info },
+  { id: 'SETTINGS_APP_INFO_CHROME', name: 'App info: Chrome', icon: Info },
+  { id: 'SETTINGS_APP_INFO_CAMERA', name: 'App info: Camera', icon: Info },
+  { id: 'SETTINGS_APP_INFO_SETTINGS', name: 'App info: Settings', icon: Info },
+  { id: 'SETTINGS_APP_INFO_PHOTOS', name: 'App info: Photos', icon: Info },
+  { id: 'SETTINGS_APP_INFO_PLAY_STORE', name: 'App info: Play Store', icon: Info },
 ];
+
+// Helper function to get AppDefinition by ID
+export const getAppDefinition = (appId: AppId): AppDefinition | undefined => {
+    return initialApps.find(app => app.id === appId);
+};
 
 
 export function AndroidMockup() {
@@ -183,7 +206,7 @@ export function AndroidMockup() {
   };
 
   const renderScreen = () => {
-    const appDefinition = initialApps.find(app => app.id === currentScreen);
+    const appDefinition = getAppDefinition(currentScreen);
     const appName = appDefinition?.name || 'App';
 
     switch (currentScreen) {
@@ -203,12 +226,14 @@ export function AndroidMockup() {
         return <NetworkInternetSettingsApp onNavigate={navigateTo} />;
       case 'SETTINGS_NETWORK_CONNECTION_SHARING':
         return <ConnectionSharingSettingsApp onNavigate={navigateTo} />;
+      case 'SETTINGS_APPS':
+        return <AppsSettingsApp onNavigate={navigateTo} appDefinitions={initialApps} />;
       case 'PHONE':
       case 'CHROME':
       case 'PHOTOS':
       case 'PLAY_STORE':
       case 'SETTINGS_CONNECTED_DEVICES':
-      case 'SETTINGS_APPS':
+      // case 'SETTINGS_APPS': // Handled above now
       case 'SETTINGS_NOTIFICATIONS':
       case 'SETTINGS_BATTERY':
       case 'SETTINGS_STORAGE':
@@ -232,6 +257,13 @@ export function AndroidMockup() {
       case 'SETTINGS_CS_ANDROID_AUTO':
       case 'SETTINGS_CS_SCREENCAST':
       case 'SETTINGS_CS_PRINT':
+      case 'SETTINGS_APP_INFO_PHONE':
+      case 'SETTINGS_APP_INFO_MESSAGES':
+      case 'SETTINGS_APP_INFO_CHROME':
+      case 'SETTINGS_APP_INFO_CAMERA':
+      case 'SETTINGS_APP_INFO_SETTINGS':
+      case 'SETTINGS_APP_INFO_PHOTOS':
+      case 'SETTINGS_APP_INFO_PLAY_STORE':
         return <PlaceholderApp appName={appName} />;
       default:
         if (currentScreen.startsWith('SETTINGS_')) {
@@ -278,3 +310,4 @@ export function AndroidMockup() {
     </div>
   );
 }
+
