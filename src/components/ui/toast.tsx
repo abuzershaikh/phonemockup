@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -16,7 +17,11 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      // "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      // Changed for in-mockup positioning:
+      "absolute bottom-[calc(theme(spacing.14)+theme(spacing.2))] left-2 right-2 z-[100] flex flex-col-reverse p-2 space-y-2",
+      // Ensure toasts don't get too wide if the parent is very wide (though mockup limits this)
+      // Removed max-w-[420px] as width will be constrained by parent (left-2 right-2)
       className
     )}
     {...props}

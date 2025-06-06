@@ -6,15 +6,16 @@ import { AppIcon } from './AppIcon';
 import type { AppDefinition, AppId } from './AndroidMockup';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Info, Trash2, Share2, Pencil } from 'lucide-react';
-import { cn } from '@/lib/utils'; // Make sure cn is imported
-import type { ClassValue } from "clsx"; // For cn function type
-import { twMerge } from "tailwind-merge"; // For cn function
-import { clsx } from "clsx"; // For cn function
+import { cn } from '@/lib/utils'; 
+import type { ClassValue } from "clsx"; 
+import { twMerge } from "tailwind-merge"; 
+import { clsx } from "clsx"; 
 
 
 interface HomeScreenProps {
   apps: AppDefinition[];
   onAppClick: (appId: AppId) => void;
+  phoneScreenRef: React.RefObject<HTMLDivElement>; // Added for popover boundary
 }
 
 const DOCK_APP_IDS: AppId[] = ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA'];
@@ -39,7 +40,7 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({ icon: Icon, text, onC
   </button>
 );
 
-export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
+export function HomeScreen({ apps, onAppClick, phoneScreenRef }: HomeScreenProps) {
   const dockApps = apps.filter(app => DOCK_APP_IDS.includes(app.id));
   const homeScreenApps = apps.filter(app =>
     !DOCK_APP_IDS.includes(app.id) &&
@@ -53,10 +54,12 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
   const handleAppLongPress = (appId: AppId, targetRect: DOMRect) => {
     const app = apps.find(a => a.id === appId);
     if (app && popoverTriggerRef.current && targetRect) {
+      // Position the invisible trigger based on the actual icon's position relative to the viewport
+      // The PopoverContent will then try to stay within its collisionBoundary (phoneScreenRef)
       popoverTriggerRef.current.style.top = `${targetRect.top + targetRect.height / 2}px`;
       popoverTriggerRef.current.style.left = `${targetRect.left + targetRect.width / 2}px`;
-      popoverTriggerRef.current.style.width = `0px`;
-      popoverTriggerRef.current.style.height = `0px`;
+      popoverTriggerRef.current.style.width = `0px`; // Invisible trigger
+      popoverTriggerRef.current.style.height = `0px`; // Invisible trigger
 
       setLongPressedApp(app);
       setIsContextMenuOpen(true);
@@ -79,13 +82,14 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
 
   const closeContextMenu = () => {
     setIsContextMenuOpen(false);
-    setTimeout(() => setLongPressedApp(null), 150);
+    // Delay clearing longPressedApp to allow Popover to animate out smoothly
+    setTimeout(() => setLongPressedApp(null), 150); // Adjust timing as needed
   };
 
   return (
     <>
       <div
-        className={`h-full flex flex-col bg-android-background p-4 overflow-y-auto transition-filter duration-150 ${isContextMenuOpen ? 'blur-md' : ''}`}
+        className={`h-full flex flex-col bg-android-background p-4 overflow-y-auto transition-filter duration-150 ${isContextMenuOpen ? 'blur-sm' : ''}`}
       >
         {/* Google Search Bar Placeholder */}
         <div className={`mb-6 mt-2 ${isContextMenuOpen ? 'pointer-events-none' : ''}`}>
@@ -120,16 +124,19 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
       </div>
 
       {/* Popover for Context Menu. It's outside the blurred div. */}
+      {/* The PopoverTrigger is an invisible div positioned by JS. */}
       <Popover open={isContextMenuOpen} onOpenChange={setIsContextMenuOpen}>
         <PopoverTrigger ref={popoverTriggerRef} style={{ position: 'fixed', opacity: 0, pointerEvents: 'none' }} />
         {longPressedApp && (
           <PopoverContent
             className="w-56 bg-card p-1.5 shadow-xl rounded-2xl border"
-            side="top"
+            side="top" // Prefer top, but will adjust based on collision
             align="center"
             sideOffset={10}
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            onInteractOutside={closeContextMenu}
+            collisionBoundary={phoneScreenRef.current} // Key change for containment
+            onOpenAutoFocus={(e) => e.preventDefault()} // Prevents focus stealing
+            onInteractOutside={closeContextMenu} // Close when clicking outside
+            sticky="partial" // Helps keep it attached if trigger scrolls (though trigger is fixed)
           >
             <ContextMenuItem icon={Info} text="App info" onClick={handleNavigateToAppInfo} />
             <ContextMenuItem icon={Trash2} text="Uninstall" onClick={() => { console.log('Uninstall:', longPressedApp.name); closeContextMenu(); }} />
@@ -141,10 +148,3 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
     </>
   );
 }
-
-// Note: cn function was moved to lib/utils.ts. This local one is no longer needed if lib/utils is imported.
-// function cn(...inputs: ClassValue[]) {
-//   return twMerge(clsx(inputs))
-// }
-// import { type ClassValue, clsx } from "clsx"
-// import { twMerge } from "tailwind-merge"

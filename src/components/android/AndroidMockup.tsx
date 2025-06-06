@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef, useRef } from 'react';
 import { StatusBar } from './StatusBar';
 import { NavigationBar } from './NavigationBar';
 import { HomeScreen } from './HomeScreen';
@@ -15,6 +15,7 @@ import { ConnectionSharingSettingsApp } from './apps/settings/ConnectionSharingS
 import { AppsSettingsApp } from './apps/settings/AppsSettingsApp';
 import { NotificationPanel, type Notification } from './NotificationPanel';
 import { RecentsScreen } from './RecentsScreen';
+import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 import { 
   MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, 
   BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, 
@@ -56,22 +57,20 @@ const initialAppsData: AppDefinition[] = [
   { id: 'PODCASTS', name: 'Podcasts', icon: Podcast, bgColor: 'bg-purple-600' },
   { id: 'GOOGLE_HOME', name: 'Home', icon: HomeIconLucide, bgColor: 'bg-orange-400' },
   { id: 'MEET', name: 'Meet', icon: Video, bgColor: 'bg-green-400' },
-  // Example preloaded apps with icons from public folder (using placeholders for demonstration)
   { 
     id: 'PRELOADED_NOTES', 
     name: 'My Notes', 
-    icon: StickyNote, // Fallback Lucide icon
-    iconUri: 'https://placehold.co/48x48.png?text=Notes', // Replace with '/app-icons/my_notes_icon.png'
+    icon: StickyNote, 
+    iconUri: '/app-icons/my_notes_icon.png', 
     bgColor: 'bg-yellow-500' 
   },
   { 
     id: 'PRELOADED_TRAVEL', 
     name: 'Travel Planner', 
-    icon: Map, // Fallback Lucide icon
-    iconUri: 'https://placehold.co/48x48.png?text=Travel', // Replace with '/app-icons/travel_planner_icon.png'
+    icon: Map, 
+    iconUri: '/app-icons/travel_planner_icon.png',
     bgColor: 'bg-cyan-500' 
   },
-  // Settings "apps" - these don't appear on home screen but are destinations for navigation
   { id: 'SETTINGS_NETWORK', name: 'Network & internet', icon: Wifi },
   { id: 'SETTINGS_CONNECTED_DEVICES', name: 'Connected devices', icon: Bluetooth },
   { id: 'SETTINGS_APPS', name: 'Apps', icon: AppWindow },
@@ -121,6 +120,8 @@ const initialAppsData: AppDefinition[] = [
   { id: 'SETTINGS_APP_INFO_PODCASTS', name: 'App info: Podcasts', icon: Info },
   { id: 'SETTINGS_APP_INFO_GOOGLE_HOME', name: 'App info: Home', icon: Info },
   { id: 'SETTINGS_APP_INFO_MEET', name: 'App info: Meet', icon: Info },
+  { id: 'SETTINGS_APP_INFO_PRELOADED_NOTES', name: 'App info: My Notes', icon: Info },
+  { id: 'SETTINGS_APP_INFO_PRELOADED_TRAVEL', name: 'App info: Travel Planner', icon: Info },
 ];
 
 const MAX_USER_APPS = 20;
@@ -145,6 +146,9 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
   const [dataSaverEnabled, setDataSaverEnabledInternal] = useState(false);
   const [appsState, setAppsState] = useState<AppDefinition[]>(initialAppsData);
   const [userAppIdCounter, setUserAppIdCounter] = useState(0);
+  
+  const phoneScreenRef = useRef<HTMLDivElement>(null);
+
 
   const getAppDefinition = useCallback((appId: AppId): AppDefinition | undefined => {
     return appsState.find(app => app.id === appId);
@@ -164,7 +168,6 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       return newStack;
     });
 
-    // Add to recents only if it's a main app, not HOME, RECENTS, or any SETTINGS_ screen
     const isMainApp = !['HOME', 'RECENTS'].includes(appId) &&
                       !appId.startsWith('SETTINGS_') &&
                       (getAppDefinition(appId)?.bgColor || appId.startsWith('USER_APP_') || appId.startsWith('PRELOADED_'));
@@ -177,7 +180,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         });
     }
     setShowNotifications(false); 
-  }, [currentScreen, appsState, getAppDefinition]);
+  }, [currentScreen, getAppDefinition]);
 
   useImperativeHandle(ref, () => ({
     navigateToPath: async (path: AppId[]) => {
@@ -212,11 +215,10 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         id: newAppId,
         name: appName,
         iconUri: iconUri,
-        icon: AppWindow, // Default Lucide icon for user apps
-        bgColor: 'bg-slate-500', // Default background color
+        icon: AppWindow, 
+        bgColor: 'bg-slate-500', 
       };
       
-      // Add App Info screen for the new user app
       const newUserAppInfo: AppDefinition = {
         id: `SETTINGS_APP_INFO_${newAppId.toUpperCase()}`,
         name: `App info: ${appName}`,
@@ -282,7 +284,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
 
     switch (currentScreen) {
       case 'HOME':
-        return <HomeScreen apps={appsState} onAppClick={navigateTo} />;
+        return <HomeScreen apps={appsState} onAppClick={navigateTo} phoneScreenRef={phoneScreenRef} />;
       case 'SETTINGS':
         return <SettingsApp onNavigate={navigateTo} />;
       case 'MESSAGES':
@@ -303,7 +305,6 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         return <ConnectionSharingSettingsApp onNavigate={navigateTo} />;
       case 'SETTINGS_APPS':
         return <AppsSettingsApp onNavigate={navigateTo} appDefinitions={appsState} />;
-      // Placeholder cases for system apps and specific settings screens
       case 'PHONE':
       case 'CHROME':
       case 'PHOTOS':
@@ -350,21 +351,18 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       case 'SETTINGS_CS_PRINT':
         return <PlaceholderApp appName={appName} />;
       default:
-        // Handle App Info screens for system, settings, user, and preloaded apps
         if (currentScreen.startsWith('SETTINGS_APP_INFO_')) {
           const potentialAppId = currentScreen.substring('SETTINGS_APP_INFO_'.length);
           const targetAppDef = getAppDefinition(potentialAppId) || appsState.find(app => app.id.toUpperCase() === potentialAppId);
           return <PlaceholderApp appName={targetAppDef ? `App info: ${targetAppDef.name}` : `App Info: ${potentialAppId.replace(/_/g, ' ')}`} />;
         }
-        // Handle User Apps and Preloaded Apps directly (if they were to be "opened")
         if (currentScreen.startsWith('USER_APP_') || currentScreen.startsWith('PRELOADED_')) {
            return <PlaceholderApp appName={appName} />;
         }
-        // Fallback for other settings screens not yet explicitly defined
         if (currentScreen.startsWith('SETTINGS_')) {
           return <PlaceholderApp appName={appName || `Settings: ${currentScreen.replace('SETTINGS_', '')}`} />;
         }
-        return <HomeScreen apps={appsState} onAppClick={navigateTo} />;
+        return <HomeScreen apps={appsState} onAppClick={navigateTo} phoneScreenRef={phoneScreenRef} />;
     }
   };
 
@@ -378,14 +376,13 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
     return () => window.removeEventListener('popstate', handlePopState);
   }, [goBack, navigationStack.length]);
   
-  // More robust key for screen content re-render
   const screenContentKey = `${currentScreen}-${appsState.length}-${appsState.map(a => a.iconUri).join('_')}`;
 
   return (
     <div className="w-[412px] h-[892px] bg-black rounded-4xl p-3 shadow-phone overflow-hidden flex flex-col relative">
       <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-lg z-50"></div>
       
-      <div className="flex-grow bg-android-background rounded-[2rem] overflow-hidden flex flex-col relative">
+      <div ref={phoneScreenRef} className="flex-grow bg-android-background rounded-[2rem] overflow-hidden flex flex-col relative">
         <StatusBar onToggleNotifications={toggleNotificationPanel} notificationCount={notifications.length} />
         <div className="flex-grow overflow-y-auto relative screen-content" key={screenContentKey}>
           {renderScreen()}
@@ -402,10 +399,10 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
             />
           </div>
         )}
+        <Toaster /> {/* Toaster moved inside the phone screen */}
       </div>
     </div>
   );
 });
 
 AndroidMockup.displayName = 'AndroidMockup';
-

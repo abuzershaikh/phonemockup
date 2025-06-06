@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
+// import { Toaster } from "@/components/ui/toaster"; // Toaster removed from here
 
 export const metadata: Metadata = {
   title: 'Mirroid - Android 15 Simulator',
@@ -21,7 +21,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         {children}
-        <Toaster />
+        {/* <Toaster /> */} {/* Toaster removed from here */}
       </body>
     </html>
   );
