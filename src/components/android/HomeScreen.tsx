@@ -6,6 +6,11 @@ import { AppIcon } from './AppIcon';
 import type { AppDefinition, AppId } from './AndroidMockup';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Info, Trash2, Share2, Pencil } from 'lucide-react';
+import { cn } from '@/lib/utils'; // Make sure cn is imported
+import type { ClassValue } from "clsx"; // For cn function type
+import { twMerge } from "tailwind-merge"; // For cn function
+import { clsx } from "clsx"; // For cn function
+
 
 interface HomeScreenProps {
   apps: AppDefinition[];
@@ -36,8 +41,8 @@ const ContextMenuItem: React.FC<ContextMenuItemProps> = ({ icon: Icon, text, onC
 
 export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
   const dockApps = apps.filter(app => DOCK_APP_IDS.includes(app.id));
-  const homeScreenApps = apps.filter(app => 
-    !DOCK_APP_IDS.includes(app.id) && 
+  const homeScreenApps = apps.filter(app =>
+    !DOCK_APP_IDS.includes(app.id) &&
     !app.id.startsWith('SETTINGS_')
   );
 
@@ -45,23 +50,23 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const popoverTriggerRef = useRef<HTMLDivElement>(null);
 
-  const handleAppLongPress = (appId: AppId, event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+  const handleAppLongPress = (appId: AppId, targetRect: DOMRect) => {
     const app = apps.find(a => a.id === appId);
-    if (app && popoverTriggerRef.current) {
-      const targetElement = event.currentTarget as HTMLElement;
-      const rect = targetElement.getBoundingClientRect();
-      
-      // Position the invisible trigger. PopoverContent will anchor relative to this.
-      // Adjustments might be needed based on Popover's default positioning behavior.
-      // For instance, if PopoverContent opens 'bottom', trigger top should be icon's bottom.
-      // This places trigger at the center of the icon for `side="bottom", align="center"`
-      popoverTriggerRef.current.style.top = `${rect.top + rect.height / 2}px`;
-      popoverTriggerRef.current.style.left = `${rect.left + rect.width / 2}px`;
+    if (app && popoverTriggerRef.current && targetRect) {
+      popoverTriggerRef.current.style.top = `${targetRect.top + targetRect.height / 2}px`;
+      popoverTriggerRef.current.style.left = `${targetRect.left + targetRect.width / 2}px`;
       popoverTriggerRef.current.style.width = `0px`;
       popoverTriggerRef.current.style.height = `0px`;
-      
+
       setLongPressedApp(app);
       setIsContextMenuOpen(true);
+    } else {
+       console.warn("Could not open context menu during long press. App, popoverTrigger, or targetRect is invalid.", {
+          appExists: !!app,
+          popoverTriggerExists: !!popoverTriggerRef.current,
+          targetRectExists: !!targetRect
+      });
+      closeContextMenu();
     }
   };
 
@@ -74,13 +79,12 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
 
   const closeContextMenu = () => {
     setIsContextMenuOpen(false);
-    // Delay clearing longPressedApp to allow Popover to fade out if needed
-    setTimeout(() => setLongPressedApp(null), 150); 
+    setTimeout(() => setLongPressedApp(null), 150);
   };
 
   return (
     <>
-      <div 
+      <div
         className={`h-full flex flex-col bg-android-background p-4 overflow-y-auto transition-filter duration-150 ${isContextMenuOpen ? 'blur-md' : ''}`}
       >
         {/* Google Search Bar Placeholder */}
@@ -98,7 +102,7 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
           <p className="text-5xl font-light text-android-primary-text">10:35</p>
           <p className="text-sm text-android-secondary-text">Tue, Jul 23 • Sunny, 28°C</p>
         </div>
-        
+
         <div className={`grid grid-cols-4 gap-x-4 gap-y-6 flex-grow content-start ${isContextMenuOpen ? 'pointer-events-none' : ''}`}>
           {homeScreenApps.map((app) => (
             <AppIcon key={app.id} app={app} onClick={onAppClick} onLongPress={handleAppLongPress} />
@@ -119,13 +123,13 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
       <Popover open={isContextMenuOpen} onOpenChange={setIsContextMenuOpen}>
         <PopoverTrigger ref={popoverTriggerRef} style={{ position: 'fixed', opacity: 0, pointerEvents: 'none' }} />
         {longPressedApp && (
-          <PopoverContent 
+          <PopoverContent
             className="w-56 bg-card p-1.5 shadow-xl rounded-2xl border"
             side="top"
             align="center"
             sideOffset={10}
-            onOpenAutoFocus={(e) => e.preventDefault()} // Prevents focus stealing, allows outside clicks
-            onInteractOutside={closeContextMenu} // Handles clicks outside the popover
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onInteractOutside={closeContextMenu}
           >
             <ContextMenuItem icon={Info} text="App info" onClick={handleNavigateToAppInfo} />
             <ContextMenuItem icon={Trash2} text="Uninstall" onClick={() => { console.log('Uninstall:', longPressedApp.name); closeContextMenu(); }} />
@@ -138,11 +142,9 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
   );
 }
 
-// Helper cn function if not already globally available in this file context (it usually is via imports)
+// Note: cn function was moved to lib/utils.ts. This local one is no longer needed if lib/utils is imported.
+// function cn(...inputs: ClassValue[]) {
+//   return twMerge(clsx(inputs))
+// }
 // import { type ClassValue, clsx } from "clsx"
 // import { twMerge } from "tailwind-merge"
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
