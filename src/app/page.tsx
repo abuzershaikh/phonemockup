@@ -6,7 +6,7 @@ import { AndroidMockup, type AppId } from '@/components/android/AndroidMockup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
-import { Settings as SettingsIcon, MessageSquare } from 'lucide-react'; // Added MessageSquare for command input
+import { Settings as SettingsIcon, MessageSquare, Folder } from 'lucide-react'; // Added Folder icon
 
 // Define the interface for the methods exposed by AndroidMockup
 export interface AndroidMockupHandles {
@@ -54,12 +54,28 @@ export default function Home() {
     setCommand(''); // Clear input after execution
   };
 
+  const handleFileManagerClick = () => {
+    // Placeholder for file manager functionality
+    setFeedbackMessage('File Manager clicked. Functionality to be implemented.');
+    console.log("File Manager icon clicked");
+  };
+
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       <main className="flex-1 flex items-center justify-center p-4 relative">
         <AndroidMockup ref={androidMockupRef} />
       </main>
       
+      <Button 
+        variant="outline" 
+        size="icon" 
+        className="fixed top-4 right-16 z-50 bg-card hover:bg-accent text-foreground" // Positioned to the left of the command panel button
+        aria-label="Open File Manager"
+        onClick={handleFileManagerClick}
+      >
+        <Folder className="h-5 w-5" />
+      </Button>
+
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
           <Button 
