@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -9,10 +8,12 @@ import { SettingsApp } from './apps/SettingsApp';
 import { MessagesApp } from './apps/MessagesApp';
 import { CameraApp } from './apps/CameraApp';
 import { PlaceholderApp } from './apps/PlaceholderApp';
-import { DisplaySettingsApp } from './apps/settings/DisplaySettingsApp'; // New import
+import { DisplaySettingsApp } from './apps/settings/DisplaySettingsApp';
+import { NetworkInternetSettingsApp } from './apps/settings/NetworkInternetSettingsApp';
+import { ConnectionSharingSettingsApp } from './apps/settings/ConnectionSharingSettingsApp';
 import { NotificationPanel, type Notification } from './NotificationPanel';
 import { RecentsScreen } from './RecentsScreen';
-import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone } from 'lucide-react';
+import { MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, Link as LinkIcon, BarChart3, LockKeyhole, Shield } from 'lucide-react';
 
 export type AppId = 
   | 'HOME' 
@@ -39,7 +40,19 @@ export type AppId =
   | 'SETTINGS_SAFETY'
   | 'SETTINGS_ACCOUNTS'
   | 'SETTINGS_SYSTEM'
-  | 'SETTINGS_ABOUT_PHONE';
+  | 'SETTINGS_ABOUT_PHONE'
+  | 'SETTINGS_NETWORK_INTERNET_DETAILS' // Placeholder from NetworkInternetSettingsApp
+  | 'SETTINGS_NETWORK_CALLS_SMS' // Placeholder from NetworkInternetSettingsApp
+  | 'SETTINGS_NETWORK_HOTSPOT_TETHERING' // Placeholder from NetworkInternetSettingsApp
+  | 'SETTINGS_NETWORK_VPN_OVERVIEW' // Placeholder from NetworkInternetSettingsApp
+  | 'SETTINGS_NETWORK_PRIVATE_DNS_OVERVIEW' // Placeholder from NetworkInternetSettingsApp
+  | 'SETTINGS_NETWORK_CONNECTION_SHARING' // Actual new screen
+  | 'SETTINGS_CS_PERSONAL_HOTSPOT' // Placeholder from ConnectionSharingSettingsApp
+  | 'SETTINGS_CS_VPN' // Placeholder from ConnectionSharingSettingsApp
+  | 'SETTINGS_CS_PRIVATE_DNS' // Placeholder from ConnectionSharingSettingsApp
+  | 'SETTINGS_CS_ANDROID_AUTO' // Placeholder from ConnectionSharingSettingsApp
+  | 'SETTINGS_CS_SCREENCAST' // Placeholder from ConnectionSharingSettingsApp
+  | 'SETTINGS_CS_PRINT'; // Placeholder from ConnectionSharingSettingsApp
 
 export interface AppDefinition {
   id: AppId;
@@ -57,22 +70,34 @@ const initialApps: AppDefinition[] = [
   { id: 'PHOTOS', name: 'Photos', icon: ImageIcon, bgColor: 'bg-purple-500' },
   { id: 'PLAY_STORE', name: 'Play Store', icon: Play, bgColor: 'bg-teal-500' },
   // Internal "apps" for settings pages, not shown on home screen
-  { id: 'SETTINGS_NETWORK', name: 'Network & internet Settings', icon: Wifi },
-  { id: 'SETTINGS_CONNECTED_DEVICES', name: 'Connected devices Settings', icon: Bluetooth },
-  { id: 'SETTINGS_APPS', name: 'Apps Settings', icon: AppWindow },
-  { id: 'SETTINGS_NOTIFICATIONS', name: 'Notifications Settings', icon: Bell },
-  { id: 'SETTINGS_BATTERY', name: 'Battery Settings', icon: BatteryCharging },
-  { id: 'SETTINGS_STORAGE', name: 'Storage Settings', icon: HardDrive },
-  { id: 'SETTINGS_SOUND', name: 'Sound & vibration Settings', icon: Volume2 },
-  { id: 'SETTINGS_DISPLAY', name: 'Display Settings', icon: SunMedium },
-  { id: 'SETTINGS_WALLPAPER', name: 'Wallpaper & style Settings', icon: Palette },
-  { id: 'SETTINGS_ACCESSIBILITY', name: 'Accessibility Settings', icon: Accessibility },
-  { id: 'SETTINGS_SECURITY', name: 'Security & privacy Settings', icon: Lock },
-  { id: 'SETTINGS_LOCATION', name: 'Location Settings', icon: MapPin },
-  { id: 'SETTINGS_SAFETY', name: 'Safety & emergency Settings', icon: ShieldAlert },
-  { id: 'SETTINGS_ACCOUNTS', name: 'Accounts Settings', icon: UserCircle },
-  { id: 'SETTINGS_SYSTEM', name: 'System Settings', icon: Globe },
-  { id: 'SETTINGS_ABOUT_PHONE', name: 'About phone Settings', icon: Smartphone },
+  { id: 'SETTINGS_NETWORK', name: 'Network & internet', icon: Wifi },
+  { id: 'SETTINGS_CONNECTED_DEVICES', name: 'Connected devices', icon: Bluetooth },
+  { id: 'SETTINGS_APPS', name: 'Apps', icon: AppWindow },
+  { id: 'SETTINGS_NOTIFICATIONS', name: 'Notifications', icon: Bell },
+  { id: 'SETTINGS_BATTERY', name: 'Battery', icon: BatteryCharging },
+  { id: 'SETTINGS_STORAGE', name: 'Storage', icon: HardDrive },
+  { id: 'SETTINGS_SOUND', name: 'Sound & vibration', icon: Volume2 },
+  { id: 'SETTINGS_DISPLAY', name: 'Display', icon: SunMedium },
+  { id: 'SETTINGS_WALLPAPER', name: 'Wallpaper & style', icon: Palette },
+  { id: 'SETTINGS_ACCESSIBILITY', name: 'Accessibility', icon: Accessibility },
+  { id: 'SETTINGS_SECURITY', name: 'Security & privacy', icon: Lock },
+  { id: 'SETTINGS_LOCATION', name: 'Location', icon: MapPin },
+  { id: 'SETTINGS_SAFETY', name: 'Safety & emergency', icon: ShieldAlert },
+  { id: 'SETTINGS_ACCOUNTS', name: 'Accounts', icon: UserCircle },
+  { id: 'SETTINGS_SYSTEM', name: 'System', icon: Globe },
+  { id: 'SETTINGS_ABOUT_PHONE', name: 'About phone', icon: Smartphone },
+  { id: 'SETTINGS_NETWORK_CONNECTION_SHARING', name: 'Connection & sharing', icon: Share2 },
+  { id: 'SETTINGS_NETWORK_INTERNET_DETAILS', name: 'Internet Details', icon: Wifi },
+  { id: 'SETTINGS_NETWORK_CALLS_SMS', name: 'Calls & SMS Settings', icon: Smartphone },
+  { id: 'SETTINGS_NETWORK_HOTSPOT_TETHERING', name: 'Hotspot & tethering Settings', icon: Router },
+  { id: 'SETTINGS_NETWORK_VPN_OVERVIEW', name: 'VPN Settings', icon: Shield },
+  { id: 'SETTINGS_NETWORK_PRIVATE_DNS_OVERVIEW', name: 'Private DNS Settings', icon: LockKeyhole },
+  { id: 'SETTINGS_CS_PERSONAL_HOTSPOT', name: 'Personal Hotspot Settings', icon: Router },
+  { id: 'SETTINGS_CS_VPN', name: 'VPN Details (Connection & Sharing)', icon: Shield },
+  { id: 'SETTINGS_CS_PRIVATE_DNS', name: 'Private DNS Details (Connection & Sharing)', icon: LockKeyhole },
+  { id: 'SETTINGS_CS_ANDROID_AUTO', name: 'Android Auto Settings', icon: Car },
+  { id: 'SETTINGS_CS_SCREENCAST', name: 'Screencast Settings', icon: ScreenShare },
+  { id: 'SETTINGS_CS_PRINT', name: 'Print Settings', icon: Printer },
 ];
 
 
@@ -92,9 +117,7 @@ export function AndroidMockup() {
     setCurrentScreen(appId);
     setNavigationStack(prev => {
       const newStack = [...prev, appId];
-      // Keep navigation stack lean for performance, especially with settings
       if (newStack.length > 15) {
-        // Remove oldest entries beyond a certain limit, keeping a few base ones like HOME
         const homeIndex = newStack.indexOf('HOME');
         const essentialBase = homeIndex !== -1 ? newStack.slice(0, homeIndex + 1) : ['HOME'];
         return [...essentialBase, ...newStack.slice(newStack.length - 10)];
@@ -174,13 +197,16 @@ export function AndroidMockup() {
         return <CameraApp />;
       case 'RECENTS':
         return <RecentsScreen recentApps={recentApps.map(id => initialApps.find(app => app.id === id)).filter(Boolean) as AppDefinition[]} onAppClick={navigateTo} onClearApp={removeFromRecents} onClearAll={() => setRecentApps([])} />;
-      case 'SETTINGS_DISPLAY': // New case
-        return <DisplaySettingsApp />;
+      case 'SETTINGS_DISPLAY':
+        return <DisplaySettingsApp onNavigate={navigateTo} />;
+      case 'SETTINGS_NETWORK':
+        return <NetworkInternetSettingsApp onNavigate={navigateTo} />;
+      case 'SETTINGS_NETWORK_CONNECTION_SHARING':
+        return <ConnectionSharingSettingsApp onNavigate={navigateTo} />;
       case 'PHONE':
       case 'CHROME':
       case 'PHOTOS':
       case 'PLAY_STORE':
-      case 'SETTINGS_NETWORK':
       case 'SETTINGS_CONNECTED_DEVICES':
       case 'SETTINGS_APPS':
       case 'SETTINGS_NOTIFICATIONS':
@@ -195,9 +221,19 @@ export function AndroidMockup() {
       case 'SETTINGS_ACCOUNTS':
       case 'SETTINGS_SYSTEM':
       case 'SETTINGS_ABOUT_PHONE':
+      case 'SETTINGS_NETWORK_INTERNET_DETAILS':
+      case 'SETTINGS_NETWORK_CALLS_SMS':
+      case 'SETTINGS_NETWORK_HOTSPOT_TETHERING':
+      case 'SETTINGS_NETWORK_VPN_OVERVIEW':
+      case 'SETTINGS_NETWORK_PRIVATE_DNS_OVERVIEW':
+      case 'SETTINGS_CS_PERSONAL_HOTSPOT':
+      case 'SETTINGS_CS_VPN':
+      case 'SETTINGS_CS_PRIVATE_DNS':
+      case 'SETTINGS_CS_ANDROID_AUTO':
+      case 'SETTINGS_CS_SCREENCAST':
+      case 'SETTINGS_CS_PRINT':
         return <PlaceholderApp appName={appName} />;
       default:
-        // Attempt to find if it's a settings sub-page based on naming convention
         if (currentScreen.startsWith('SETTINGS_')) {
           return <PlaceholderApp appName={appName || `Settings: ${currentScreen.replace('SETTINGS_', '')}`} />;
         }

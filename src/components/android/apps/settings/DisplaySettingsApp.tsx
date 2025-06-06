@@ -1,8 +1,8 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import { AppScreen } from '../../AppScreen';
+import type { AppId } from '../../AndroidMockup'; // Added for onNavigate
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ interface SettingItemProps {
   control?: React.ReactNode;
   onClick?: () => void;
   warning?: string;
+  appId?: AppId; // Added for consistency, though not used for navigation in this specific file yet
 }
 
 const SettingItem: React.FC<SettingItemProps> = ({ icon: Icon, title, description, control, onClick, warning }) => (
@@ -36,8 +37,11 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon: Icon, title, descriptio
   </button>
 );
 
+interface DisplaySettingsAppProps {
+  onNavigate: (appId: AppId) => void; // Added for future use if navigation from here is needed
+}
 
-export function DisplaySettingsApp() {
+export function DisplaySettingsApp({ onNavigate }: DisplaySettingsAppProps) {
   const [brightness, setBrightness] = useState(50);
   const [adaptiveBrightness, setAdaptiveBrightness] = useState(true);
   const [darkTheme, setDarkTheme] = useState(false);
@@ -47,16 +51,17 @@ export function DisplaySettingsApp() {
   const [displaySize, setDisplaySize] = useState('Default');
   const [colors, setColors] = useState('Natural');
   const [screenSaver, setScreenSaver] = useState('Clock');
-  const [lockScreenText, setLockScreenText] = useState('');
+  // const [lockScreenText, setLockScreenText] = useState(''); // Not used, commented out
 
 
-  // These would eventually open sub-dialogs or navigate further
-  const handleScreenTimeout = () => console.log('Open Screen Timeout settings');
-  const handleFontSize = () => console.log('Open Font Size settings');
-  const handleDisplaySize = () => console.log('Open Display Size settings');
-  const handleColors = () => console.log('Open Color settings');
-  const handleScreenSaver = () => console.log('Open Screen Saver settings');
-  const handleLockScreen = () => console.log('Open Lock Screen settings');
+  // These would eventually open sub-dialogs or navigate further using onNavigate
+  const handleScreenTimeout = () => console.log('Open Screen Timeout settings'); // Placeholder
+  const handleFontSize = () => console.log('Open Font Size settings'); // Placeholder
+  const handleDisplaySize = () => console.log('Open Display Size settings'); // Placeholder
+  const handleColors = () => console.log('Open Color settings'); // Placeholder
+  const handleScreenSaver = () => console.log('Open Screen Saver settings'); // Placeholder
+  const handleLockScreen = () => console.log('Open Lock Screen settings'); // Placeholder
+  const handleWallpaperStyle = () => console.log("Navigate to Wallpaper & Style"); // Placeholder
 
 
   return (
@@ -91,7 +96,7 @@ export function DisplaySettingsApp() {
           icon={Palette}
           title="Wallpaper & style"
           description="Colors, themed icons, app grid"
-          onClick={() => console.log("Navigate to Wallpaper & Style")}
+          onClick={handleWallpaperStyle} // Updated to use handler
         />
 
         <Separator className="my-2" />
@@ -132,14 +137,14 @@ export function DisplaySettingsApp() {
           onClick={handleFontSize}
         />
         <SettingItem
-          icon={MonitorSmartphone} // Using MonitorSmartphone as a placeholder for Display Size icon
+          icon={MonitorSmartphone} 
           title="Display size"
           description={displaySize + (displaySize !== "Default" ? " (Non-standard)" : "")}
           warning={displaySize !== "Default" ? "Some apps may not display correctly" : undefined}
           onClick={handleDisplaySize}
         />
         <SettingItem
-          icon={Palette} // Re-using Palette, might need a more specific icon
+          icon={Palette} 
           title="Colors"
           description={colors}
           onClick={handleColors}
@@ -148,7 +153,7 @@ export function DisplaySettingsApp() {
         <Separator className="my-2" />
         <p className="px-3 pt-2 pb-1 text-xs font-medium text-primary uppercase">More Display Options</p>
          <SettingItem
-          icon={ScreenShare} // Placeholder for Screen Saver
+          icon={ScreenShare} 
           title="Screen saver"
           description={screenSaver}
           onClick={handleScreenSaver}
