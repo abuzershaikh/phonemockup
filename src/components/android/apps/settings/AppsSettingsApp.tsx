@@ -23,12 +23,28 @@ const systemAppIdsForInfo: AppId[] = [
   'CAMERA', 
   'SETTINGS', 
   'PHOTOS', 
-  'PLAY_STORE'
+  'PLAY_STORE',
+  'MAPS',
+  'YOUTUBE',
+  'DRIVE',
+  'GMAIL',
+  'CALENDAR',
+  'CLOCK',
+  'CONTACTS',
+  'CALCULATOR',
+  'FILES',
+  'KEEP_NOTES',
+  'WEATHER',
+  'PODCASTS',
+  'GOOGLE_HOME',
+  'MEET',
+  'PRELOADED_NOTES',
+  'PRELOADED_TRAVEL'
 ];
 
 const getAppInfoScreenId = (appId: AppId): AppId | null => {
   // For system apps and user-added apps (which start with USER_APP_)
-  if (systemAppIdsForInfo.includes(appId) || appId.startsWith('USER_APP_')) {
+  if (systemAppIdsForInfo.includes(appId.toUpperCase()) || appId.startsWith('USER_APP_')) {
     return `SETTINGS_APP_INFO_${appId.toUpperCase()}`;
   }
   return null;
@@ -37,7 +53,7 @@ const getAppInfoScreenId = (appId: AppId): AppId | null => {
 export function AppsSettingsApp({ onNavigate, appDefinitions }: AppsSettingsAppProps) {
   // List all apps that are not internal settings screens themselves
   const appsToList = appDefinitions.filter(
-    appDef => !appDef.id.startsWith('SETTINGS_') || systemAppIdsForInfo.includes(appDef.id) || appDef.id.startsWith('USER_APP_')
+    appDef => !appDef.id.startsWith('SETTINGS_') || systemAppIdsForInfo.includes(appDef.id.toUpperCase()) || appDef.id.startsWith('USER_APP_')
   ).sort((a,b) => a.name.localeCompare(b.name)); // Sort alphabetically
 
   const userVisibleAppCount = appsToList.length;
@@ -129,3 +145,4 @@ const DefaultAppItem: React.FC<DefaultAppItemProps> = ({ title, currentApp, onCl
         <ChevronRight className="w-5 h-5 text-android-secondary-text" />
     </button>
 );
+

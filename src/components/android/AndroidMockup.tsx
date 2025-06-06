@@ -19,7 +19,8 @@ import {
   MessageSquare, Settings, Camera, Phone, Chrome, Image as ImageIcon, Play, Wifi, Bluetooth, AppWindow, Bell, 
   BatteryCharging, HardDrive, Volume2, SunMedium, Palette, Accessibility, Lock, MapPin, ShieldAlert, 
   UserCircle, Globe, Smartphone, Share2, Router, Leaf, Network, Plane, Car, ScreenShare, Printer, 
-  Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info, StickyNote, Map
+  Link as LinkIcon, BarChart3, LockKeyhole, Shield as ShieldIcon, Info, StickyNote, Map, Youtube, FolderArchive,
+  Mail, CalendarDays, ClockIcon, Users, Calculator, FolderOpen, NotebookPen, CloudSun, Podcast, Home as HomeIconLucide, Video
 } from 'lucide-react';
 
 // AppId is now a generic string to support dynamic app IDs
@@ -41,6 +42,20 @@ const initialAppsData: AppDefinition[] = [
   { id: 'SETTINGS', name: 'Settings', icon: Settings, bgColor: 'bg-gray-500' },
   { id: 'PHOTOS', name: 'Photos', icon: ImageIcon, bgColor: 'bg-purple-500' },
   { id: 'PLAY_STORE', name: 'Play Store', icon: Play, bgColor: 'bg-teal-500' },
+  { id: 'MAPS', name: 'Maps', icon: Map, bgColor: 'bg-green-600' },
+  { id: 'YOUTUBE', name: 'YouTube', icon: Youtube, bgColor: 'bg-red-600' },
+  { id: 'DRIVE', name: 'Drive', icon: FolderArchive, bgColor: 'bg-yellow-500' },
+  { id: 'GMAIL', name: 'Gmail', icon: Mail, bgColor: 'bg-red-500' },
+  { id: 'CALENDAR', name: 'Calendar', icon: CalendarDays, bgColor: 'bg-blue-400' },
+  { id: 'CLOCK', name: 'Clock', icon: ClockIcon, bgColor: 'bg-indigo-500' },
+  { id: 'CONTACTS', name: 'Contacts', icon: Users, bgColor: 'bg-orange-500' },
+  { id: 'CALCULATOR', name: 'Calculator', icon: Calculator, bgColor: 'bg-gray-400' },
+  { id: 'FILES', name: 'Files', icon: FolderOpen, bgColor: 'bg-sky-500' },
+  { id: 'KEEP_NOTES', name: 'Keep Notes', icon: NotebookPen, bgColor: 'bg-amber-500' },
+  { id: 'WEATHER', name: 'Weather', icon: CloudSun, bgColor: 'bg-blue-300' },
+  { id: 'PODCASTS', name: 'Podcasts', icon: Podcast, bgColor: 'bg-purple-600' },
+  { id: 'GOOGLE_HOME', name: 'Home', icon: HomeIconLucide, bgColor: 'bg-orange-400' },
+  { id: 'MEET', name: 'Meet', icon: Video, bgColor: 'bg-green-400' },
   // Example preloaded apps with icons from public folder (using placeholders for demonstration)
   { 
     id: 'PRELOADED_NOTES', 
@@ -92,6 +107,20 @@ const initialAppsData: AppDefinition[] = [
   { id: 'SETTINGS_APP_INFO_SETTINGS', name: 'App info: Settings', icon: Info },
   { id: 'SETTINGS_APP_INFO_PHOTOS', name: 'App info: Photos', icon: Info },
   { id: 'SETTINGS_APP_INFO_PLAY_STORE', name: 'App info: Play Store', icon: Info },
+  { id: 'SETTINGS_APP_INFO_MAPS', name: 'App info: Maps', icon: Info },
+  { id: 'SETTINGS_APP_INFO_YOUTUBE', name: 'App info: YouTube', icon: Info },
+  { id: 'SETTINGS_APP_INFO_DRIVE', name: 'App info: Drive', icon: Info },
+  { id: 'SETTINGS_APP_INFO_GMAIL', name: 'App info: Gmail', icon: Info },
+  { id: 'SETTINGS_APP_INFO_CALENDAR', name: 'App info: Calendar', icon: Info },
+  { id: 'SETTINGS_APP_INFO_CLOCK', name: 'App info: Clock', icon: Info },
+  { id: 'SETTINGS_APP_INFO_CONTACTS', name: 'App info: Contacts', icon: Info },
+  { id: 'SETTINGS_APP_INFO_CALCULATOR', name: 'App info: Calculator', icon: Info },
+  { id: 'SETTINGS_APP_INFO_FILES', name: 'App info: Files', icon: Info },
+  { id: 'SETTINGS_APP_INFO_KEEP_NOTES', name: 'App info: Keep Notes', icon: Info },
+  { id: 'SETTINGS_APP_INFO_WEATHER', name: 'App info: Weather', icon: Info },
+  { id: 'SETTINGS_APP_INFO_PODCASTS', name: 'App info: Podcasts', icon: Info },
+  { id: 'SETTINGS_APP_INFO_GOOGLE_HOME', name: 'App info: Home', icon: Info },
+  { id: 'SETTINGS_APP_INFO_MEET', name: 'App info: Meet', icon: Info },
 ];
 
 const MAX_USER_APPS = 20;
@@ -135,7 +164,12 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       return newStack;
     });
 
-    if (appId !== 'HOME' && appId !== 'RECENTS' && !appId.startsWith('SETTINGS_') && !appId.startsWith('USER_APP_') && !appId.startsWith('PRELOADED_')) {
+    // Add to recents only if it's a main app, not HOME, RECENTS, or any SETTINGS_ screen
+    const isMainApp = !['HOME', 'RECENTS'].includes(appId) &&
+                      !appId.startsWith('SETTINGS_') &&
+                      (getAppDefinition(appId)?.bgColor || appId.startsWith('USER_APP_') || appId.startsWith('PRELOADED_'));
+
+    if (isMainApp) {
         setRecentApps(prev => {
             const filtered = prev.filter(id => id !== appId);
             const newRecents = [appId, ...filtered];
@@ -143,7 +177,7 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         });
     }
     setShowNotifications(false); 
-  }, [currentScreen, appsState]);
+  }, [currentScreen, appsState, getAppDefinition]);
 
   useImperativeHandle(ref, () => ({
     navigateToPath: async (path: AppId[]) => {
@@ -181,7 +215,15 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         icon: AppWindow, // Default Lucide icon for user apps
         bgColor: 'bg-slate-500', // Default background color
       };
-      setAppsState(prevApps => [...prevApps, newApp]);
+      
+      // Add App Info screen for the new user app
+      const newUserAppInfo: AppDefinition = {
+        id: `SETTINGS_APP_INFO_${newAppId.toUpperCase()}`,
+        name: `App info: ${appName}`,
+        icon: Info,
+      };
+
+      setAppsState(prevApps => [...prevApps, newApp, newUserAppInfo]);
       return true;
     },
     getCurrentScreen: () => currentScreen,
@@ -266,8 +308,22 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
       case 'CHROME':
       case 'PHOTOS':
       case 'PLAY_STORE':
-      case 'PRELOADED_NOTES': // Example preloaded app
-      case 'PRELOADED_TRAVEL': // Example preloaded app
+      case 'MAPS':
+      case 'YOUTUBE':
+      case 'DRIVE':
+      case 'GMAIL':
+      case 'CALENDAR':
+      case 'CLOCK':
+      case 'CONTACTS':
+      case 'CALCULATOR':
+      case 'FILES':
+      case 'KEEP_NOTES':
+      case 'WEATHER':
+      case 'PODCASTS':
+      case 'GOOGLE_HOME':
+      case 'MEET':
+      case 'PRELOADED_NOTES': 
+      case 'PRELOADED_TRAVEL': 
       case 'SETTINGS_CONNECTED_DEVICES':
       case 'SETTINGS_NOTIFICATIONS':
       case 'SETTINGS_BATTERY':
@@ -297,8 +353,8 @@ export const AndroidMockup = forwardRef<AndroidMockupHandles, {}>((props, ref) =
         // Handle App Info screens for system, settings, user, and preloaded apps
         if (currentScreen.startsWith('SETTINGS_APP_INFO_')) {
           const potentialAppId = currentScreen.substring('SETTINGS_APP_INFO_'.length);
-          const targetAppDef = getAppDefinition(potentialAppId);
-          return <PlaceholderApp appName={targetAppDef ? `App info: ${targetAppDef.name}` : `App Info: ${potentialAppId}`} />;
+          const targetAppDef = getAppDefinition(potentialAppId) || appsState.find(app => app.id.toUpperCase() === potentialAppId);
+          return <PlaceholderApp appName={targetAppDef ? `App info: ${targetAppDef.name}` : `App Info: ${potentialAppId.replace(/_/g, ' ')}`} />;
         }
         // Handle User Apps and Preloaded Apps directly (if they were to be "opened")
         if (currentScreen.startsWith('USER_APP_') || currentScreen.startsWith('PRELOADED_')) {
