@@ -1,21 +1,21 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import { AppScreen } from '../../AppScreen';
-import type { AppId } from '../../AndroidMockup';
+import type { AppId } from '../../AndroidMockup'; // AppId is now string
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Plane, Router, Shield, Lock, Car, ScreenShare, Printer, Link as LinkIcon, ChevronRight, AlertTriangle } from 'lucide-react';
 
-// Re-defining SettingItem here for simplicity, consider moving to a shared component later
 interface SettingItemProps {
   icon: React.ElementType;
   title: string;
   description?: string;
   control?: React.ReactNode;
   onClick?: () => void;
-  appId?: AppId; 
-  subLabel?: string; // For "Print - On" like behavior
+  appId?: AppId; // string 
+  subLabel?: string;
   warning?: string;
 }
 
@@ -45,9 +45,8 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon: Icon, title, descriptio
   </button>
 );
 
-
 interface ConnectionSharingSettingsAppProps {
-  onNavigate: (appId: AppId) => void;
+  onNavigate: (appId: AppId) => void; // AppId is now string
 }
 
 export function ConnectionSharingSettingsApp({ onNavigate }: ConnectionSharingSettingsAppProps) {
@@ -100,7 +99,7 @@ export function ConnectionSharingSettingsApp({ onNavigate }: ConnectionSharingSe
     {
       icon: Printer,
       title: 'Print',
-      subLabel: 'On', // As per image
+      subLabel: 'On', 
       onClick: () => onNavigate('SETTINGS_CS_PRINT'),
       appId: 'SETTINGS_CS_PRINT',
     },

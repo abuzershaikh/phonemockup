@@ -2,18 +2,22 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { AndroidMockup, type AppId } from '@/components/android/AndroidMockup';
+import { AndroidMockup } from '@/components/android/AndroidMockup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
-import { Settings as SettingsIcon, MessageSquare, Folder } from 'lucide-react';
+import { Settings as SettingsIcon, MessageSquare, Folder, AppWindow } from 'lucide-react';
 
+// AppId is now string
 export interface AndroidMockupHandles {
-  navigateToPath: (path: AppId[]) => Promise<void>;
+  navigateToPath: (path: string[]) => Promise<void>;
   setDataSaverEnabled: (enabled: boolean) => Promise<void>;
-  setAppIcon: (appId: AppId, iconUri: string) => Promise<void>;
-  getCurrentScreen: () => AppId;
+  setAppIcon: (appId: string, iconUri: string) => Promise<void>;
+  addApp: (appName: string, iconUri: string) => Promise<boolean>; // New method
+  getCurrentScreen: () => string;
 }
+
+const MAX_FILES_PER_UPLOAD = 20;
 
 export default function Home() {
   const [command, setCommand] = useState('');
@@ -60,30 +64,79 @@ export default function Home() {
   };
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && androidMockupRef.current) {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    if (!androidMockupRef.current) {
+      setFeedbackMessage('Mockup not ready to add apps.');
+      if(event.target) event.target.value = '';
+      return;
+    }
+
+    if (files.length > MAX_FILES_PER_UPLOAD) {
+      setFeedbackMessage(`You can select a maximum of ${MAX_FILES_PER_UPLOAD} image files at a time.`);
+      if(event.target) event.target.value = '';
+      return;
+    }
+
+    let addedCount = 0;
+    let failedCount = 0;
+
+    setFeedbackMessage(`Processing ${files.length} file(s)...`);
+
+    for (const file of files) {
       if (!file.type.startsWith('image/')) {
-        setFeedbackMessage('Please select an image file.');
-        if(event.target) event.target.value = ''; // Reset file input
-        return;
+        console.warn(`Skipping non-image file: ${file.name}`);
+        failedCount++;
+        continue;
       }
       
+      const appName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUri = reader.result as string;
-        try {
-          // For this example, we'll change the Messages app icon.
-          // In a real app, you'd have a way to select which app to change.
-          await androidMockupRef.current?.setAppIcon('MESSAGES', dataUri);
-          setFeedbackMessage(`Selected image "${file.name}" and updated Messages app icon.`);
-        } catch (error) {
-          console.error("Error setting app icon:", error);
-          setFeedbackMessage('Failed to set app icon.');
+      const promise = new Promise<boolean>((resolve, reject) => {
+        reader.onloadend = async () => {
+          const dataUri = reader.result as string;
+          try {
+            const success = await androidMockupRef.current!.addApp(appName, dataUri);
+            resolve(success);
+          } catch (error) {
+            console.error(`Error adding app ${appName}:`, error);
+            reject(false);
+          }
+        };
+        reader.onerror = () => {
+            console.error(`Error reading file ${file.name}`);
+            reject(false);
         }
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      });
+
+      try {
+        const success = await promise;
+        if (success) {
+          addedCount++;
+        } else {
+          failedCount++;
+        }
+      } catch {
+        failedCount++;
+      }
     }
-     if(event.target) event.target.value = ''; // Reset file input to allow selecting the same file again
+    
+    let finalMessage = '';
+    if (addedCount > 0) {
+        finalMessage += `${addedCount} app(s) added successfully. `;
+    }
+    if (failedCount > 0) {
+        finalMessage += `${failedCount} app(s) failed to add (e.g., non-image, limit reached, or error).`;
+    }
+    if (addedCount === 0 && failedCount === 0) {
+        finalMessage = 'No files were processed.';
+    }
+    setFeedbackMessage(finalMessage.trim());
+
+    if(event.target) event.target.value = ''; // Reset file input
   };
 
   return (
@@ -98,13 +151,14 @@ export default function Home() {
         onChange={handleFileSelected} 
         style={{ display: 'none' }} 
         accept="image/*"
+        multiple // Allow multiple files
       />
 
       <Button 
         variant="outline" 
         size="icon" 
         className="fixed top-4 right-16 z-50 bg-card hover:bg-accent text-foreground"
-        aria-label="Open File Manager to change app icon"
+        aria-label="Open File Manager to add app icons"
         onClick={handleFileManagerClick}
       >
         <Folder className="h-5 w-5" />
@@ -127,7 +181,7 @@ export default function Home() {
             <SheetDescription className="text-muted-foreground">
               Enter commands to interact with the Android mockup.
               Try: "turn data saver on" or "turn data saver off".
-              Click the Folder icon to change the Messages app icon.
+              Click the Folder icon to add new apps with custom icons.
             </SheetDescription>
           </SheetHeader>
           <div className="flex-grow py-4 space-y-4">

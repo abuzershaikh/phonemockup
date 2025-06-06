@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { AppIcon } from './AppIcon';
-import type { AppDefinition, AppId } from './AndroidMockup';
+import type { AppDefinition, AppId } from './AndroidMockup'; // AppId is now string
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -16,14 +16,17 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface HomeScreenProps {
-  apps: AppDefinition[];
+  apps: AppDefinition[]; // Receives all apps
   onAppClick: (appId: AppId) => void;
 }
 
+// These are the IDs for apps that should always appear in the dock
+const DOCK_APP_IDS: AppId[] = ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA'];
+
 export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
-  const dockAppIds: AppId[] = ['PHONE', 'MESSAGES', 'CHROME', 'CAMERA'];
-  const dockApps = apps.filter(app => dockAppIds.includes(app.id));
-  const homeScreenApps = apps.filter(app => !dockAppIds.includes(app.id));
+  const dockApps = apps.filter(app => DOCK_APP_IDS.includes(app.id));
+  // Home screen apps are all apps *not* in the dock
+  const homeScreenApps = apps.filter(app => !DOCK_APP_IDS.includes(app.id));
 
   const [longPressedApp, setLongPressedApp] = useState<AppDefinition | null>(null);
   const [isAppInfoDialogOpen, setIsAppInfoDialogOpen] = useState(false);
@@ -39,7 +42,8 @@ export function HomeScreen({ apps, onAppClick }: HomeScreenProps) {
   const handleNavigateToAppInfo = () => {
     if (!longPressedApp) return;
     
-    const appInfoScreenId = `SETTINGS_APP_INFO_${longPressedApp.id.toUpperCase()}` as AppId;
+    // Construct AppId for the app info screen. Works for system and user apps.
+    const appInfoScreenId = `SETTINGS_APP_INFO_${longPressedApp.id.toUpperCase()}`;
     onAppClick(appInfoScreenId);
     setIsAppInfoDialogOpen(false);
     setLongPressedApp(null);

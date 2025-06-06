@@ -2,13 +2,13 @@
 'use client';
 
 import React, { useRef } from 'react';
-import type { AppDefinition } from './AndroidMockup'; 
-import Image from 'next/image'; // Import next/image for optimized images
+import type { AppDefinition, AppId } from './AndroidMockup'; 
+import Image from 'next/image';
 
 interface AppIconProps {
   app: AppDefinition;
-  onClick: (appId: AppDefinition['id']) => void;
-  onLongPress?: (appId: AppDefinition['id']) => void;
+  onClick: (appId: AppId) => void;
+  onLongPress?: (appId: AppId) => void;
 }
 
 export function AppIcon({ app, onClick, onLongPress }: AppIconProps) {
@@ -20,7 +20,9 @@ export function AppIcon({ app, onClick, onLongPress }: AppIconProps) {
     isLongPressed.current = false;
     if (onLongPress) {
       longPressTimeout.current = setTimeout(() => {
-        onLongPress(app.id);
+        if (onLongPress) { // Check again in case component unmounted or onLongPress changed
+             onLongPress(app.id);
+        }
         isLongPressed.current = true;
       }, 500); 
     }
@@ -65,9 +67,9 @@ export function AppIcon({ app, onClick, onLongPress }: AppIconProps) {
           <Image 
             src={app.iconUri} 
             alt={`${app.name} icon`} 
-            width={48} // Match div size
-            height={48} // Match div size
-            className="object-cover w-full h-full" // Ensure it fills the circle
+            width={48}
+            height={48}
+            className="object-cover w-full h-full"
             data-ai-hint="app icon"
           />
         ) : (

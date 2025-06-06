@@ -3,20 +3,20 @@
 
 import React from 'react';
 import { AppScreen } from '../../AppScreen';
-import type { AppId, AppDefinition } from '../../AndroidMockup';
-// Removed getAppDefinition import as appDefinitions is passed directly
+import type { AppId, AppDefinition } from '../../AndroidMockup'; // AppId is now string
 import { ChevronRight, AppWindow } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image'; // For custom icons
+import Image from 'next/image';
 
 interface AppsSettingsAppProps {
-  onNavigate: (appId: AppId) => void;
+  onNavigate: (appId: AppId) => void; // AppId is now string
   appDefinitions: AppDefinition[]; 
 }
 
-const listedAppIds: AppId[] = [
+// System apps typically listed or having special App Info pages
+const systemAppIdsForInfo: AppId[] = [
   'PHONE', 
   'MESSAGES', 
   'CHROME', 
@@ -27,29 +27,27 @@ const listedAppIds: AppId[] = [
 ];
 
 const getAppInfoScreenId = (appId: AppId): AppId | null => {
-  const baseId = appId.replace('SETTINGS_', ''); 
-  if (listedAppIds.includes(appId as AppId) || listedAppIds.some(id => id.endsWith(baseId))) {
-    return `SETTINGS_APP_INFO_${baseId.toUpperCase()}` as AppId;
+  // For system apps and user-added apps (which start with USER_APP_)
+  if (systemAppIdsForInfo.includes(appId) || appId.startsWith('USER_APP_')) {
+    return `SETTINGS_APP_INFO_${appId.toUpperCase()}`;
   }
   return null;
 };
 
-
 export function AppsSettingsApp({ onNavigate, appDefinitions }: AppsSettingsAppProps) {
-  const appsToList = listedAppIds
-    .map(id => appDefinitions.find(appDef => appDef.id === id))
-    .filter(Boolean) as AppDefinition[];
+  // List all apps that are not internal settings screens themselves
+  const appsToList = appDefinitions.filter(
+    appDef => !appDef.id.startsWith('SETTINGS_') || systemAppIdsForInfo.includes(appDef.id) || appDef.id.startsWith('USER_APP_')
+  ).sort((a,b) => a.name.localeCompare(b.name)); // Sort alphabetically
 
-  // Count user-facing apps (those with bgColor or iconUri are considered as such for this example)
-  const userFacingAppCount = appDefinitions.filter(app => app.bgColor || app.iconUri).length;
-
+  const userVisibleAppCount = appsToList.length;
 
   return (
     <AppScreen appName="Apps">
       <div className="flex flex-col h-full">
         <div className="p-4 border-b border-border">
             <Button variant="outline" className="w-full justify-start text-base" onClick={() => console.log("See all apps clicked")}>
-                See all {userFacingAppCount} apps 
+                See all {userVisibleAppCount} apps 
             </Button>
         </div>
         
@@ -65,7 +63,7 @@ export function AppsSettingsApp({ onNavigate, appDefinitions }: AppsSettingsAppP
         <Separator />
 
         <div className="p-4">
-            <h2 className="text-sm font-medium text-primary mb-2">APP LIST</h2>
+            <h2 className="text-sm font-medium text-primary mb-2">APP LIST ({appsToList.length})</h2>
         </div>
         <ScrollArea className="flex-grow">
           <div className="space-y-0 px-1 pb-4">
@@ -97,7 +95,8 @@ export function AppsSettingsApp({ onNavigate, appDefinitions }: AppsSettingsAppP
                     </div>
                     <div className="flex-grow overflow-hidden">
                       <p className="font-medium text-android-primary-text truncate">{app.name}</p>
-                      <p className="text-xs text-android-secondary-text truncate">Version 1.0, 50 MB</p> 
+                      {/* Simplified description */}
+                      <p className="text-xs text-android-secondary-text truncate">App details</p> 
                     </div>
                     {appInfoScreenId && <ChevronRight className="w-5 h-5 text-android-secondary-text flex-shrink-0" />}
                   </button>
@@ -111,7 +110,6 @@ export function AppsSettingsApp({ onNavigate, appDefinitions }: AppsSettingsAppP
     </AppScreen>
   );
 }
-
 
 interface DefaultAppItemProps {
     title: string;

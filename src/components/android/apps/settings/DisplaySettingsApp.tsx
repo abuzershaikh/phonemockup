@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import { AppScreen } from '../../AppScreen';
-import type { AppId } from '../../AndroidMockup'; // Added for onNavigate
+import type { AppId } from '../../AndroidMockup'; // AppId is now string
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -16,7 +17,7 @@ interface SettingItemProps {
   control?: React.ReactNode;
   onClick?: () => void;
   warning?: string;
-  appId?: AppId; // Added for consistency, though not used for navigation in this specific file yet
+  appId?: AppId; // string
 }
 
 const SettingItem: React.FC<SettingItemProps> = ({ icon: Icon, title, description, control, onClick, warning }) => (
@@ -38,7 +39,7 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon: Icon, title, descriptio
 );
 
 interface DisplaySettingsAppProps {
-  onNavigate: (appId: AppId) => void; // Added for future use if navigation from here is needed
+  onNavigate: (appId: AppId) => void; // AppId is now string
 }
 
 export function DisplaySettingsApp({ onNavigate }: DisplaySettingsAppProps) {
@@ -51,17 +52,14 @@ export function DisplaySettingsApp({ onNavigate }: DisplaySettingsAppProps) {
   const [displaySize, setDisplaySize] = useState('Default');
   const [colors, setColors] = useState('Natural');
   const [screenSaver, setScreenSaver] = useState('Clock');
-  // const [lockScreenText, setLockScreenText] = useState(''); // Not used, commented out
 
-
-  // These would eventually open sub-dialogs or navigate further using onNavigate
-  const handleScreenTimeout = () => console.log('Open Screen Timeout settings'); // Placeholder
-  const handleFontSize = () => console.log('Open Font Size settings'); // Placeholder
-  const handleDisplaySize = () => console.log('Open Display Size settings'); // Placeholder
-  const handleColors = () => console.log('Open Color settings'); // Placeholder
-  const handleScreenSaver = () => console.log('Open Screen Saver settings'); // Placeholder
-  const handleLockScreen = () => console.log('Open Lock Screen settings'); // Placeholder
-  const handleWallpaperStyle = () => console.log("Navigate to Wallpaper & Style"); // Placeholder
+  const handleScreenTimeout = () => console.log('Open Screen Timeout settings');
+  const handleFontSize = () => console.log('Open Font Size settings');
+  const handleDisplaySize = () => console.log('Open Display Size settings');
+  const handleColors = () => console.log('Open Color settings');
+  const handleScreenSaver = () => console.log('Open Screen Saver settings');
+  const handleLockScreen = () => console.log('Open Lock Screen settings');
+  const handleWallpaperStyle = () => onNavigate('SETTINGS_WALLPAPER');
 
 
   return (
@@ -96,7 +94,8 @@ export function DisplaySettingsApp({ onNavigate }: DisplaySettingsAppProps) {
           icon={Palette}
           title="Wallpaper & style"
           description="Colors, themed icons, app grid"
-          onClick={handleWallpaperStyle} // Updated to use handler
+          onClick={handleWallpaperStyle} 
+          appId="SETTINGS_WALLPAPER"
         />
 
         <Separator className="my-2" />

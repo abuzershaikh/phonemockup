@@ -4,7 +4,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
-import type { AppDefinition, AppId } from './AndroidMockup';
+import type { AppDefinition, AppId } from './AndroidMockup'; // AppId is now string
 import { Button } from '@/components/ui/button';
 
 interface RecentsScreenProps {

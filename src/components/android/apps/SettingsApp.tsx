@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { AppScreen } from '../AppScreen';
-import type { AppId } from '../AndroidMockup';
+import type { AppId } from '../AndroidMockup'; // AppId is now string
 import { 
   Wifi, 
   Bluetooth, 
@@ -27,7 +27,7 @@ interface SettingsItem {
   icon: React.ElementType;
   name: string;
   description: string;
-  appId: AppId;
+  appId: AppId; // string
 }
 
 const settingsItems: SettingsItem[] = [
@@ -50,7 +50,7 @@ const settingsItems: SettingsItem[] = [
 ];
 
 interface SettingsAppProps {
-  onNavigate: (appId: AppId) => void;
+  onNavigate: (appId: AppId) => void; // AppId is now string
 }
 
 export function SettingsApp({ onNavigate }: SettingsAppProps) {

@@ -1,9 +1,9 @@
 
 'use client';
 
-import React from 'react'; // Removed useState as dataSaver is now a prop
+import React from 'react';
 import { AppScreen } from '../../AppScreen';
-import type { AppId } from '../../AndroidMockup';
+import type { AppId } from '../../AndroidMockup'; // AppId is now string
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Wifi, Smartphone, Router, Share2, Leaf, Shield, Lock, Network, ChevronRight, AlertTriangle } from 'lucide-react';
@@ -14,7 +14,7 @@ interface SettingItemProps {
   description?: string;
   control?: React.ReactNode;
   onClick?: () => void;
-  appId?: AppId; 
+  appId?: AppId; // string
   warning?: string;
 }
 
@@ -37,13 +37,12 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon: Icon, title, descriptio
 );
 
 interface NetworkInternetSettingsAppProps {
-  onNavigate: (appId: AppId) => void;
-  dataSaver: boolean; // Prop for Data Saver state
-  onDataSaverChange: (enabled: boolean) => void; // Prop for changing Data Saver state
+  onNavigate: (appId: AppId) => void; // AppId is now string
+  dataSaver: boolean;
+  onDataSaverChange: (enabled: boolean) => void;
 }
 
 export function NetworkInternetSettingsApp({ onNavigate, dataSaver, onDataSaverChange }: NetworkInternetSettingsAppProps) {
-  // const [dataSaver, setDataSaver] = React.useState(false); // State moved to AndroidMockup
   const [adaptiveConnectivity, setAdaptiveConnectivity] = React.useState(true);
 
   const settingsList: SettingItemProps[] = [
